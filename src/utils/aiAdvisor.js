@@ -1,5 +1,18 @@
+/**
+ * @fileoverview EcoAI advisor integration for EcoSelf.
+ * Wraps the Anthropic Claude API to provide personalized, contextual
+ * carbon footprint coaching. Builds a rich system prompt from the
+ * user's live footprint data and conversation history.
+ * @module aiAdvisor
+ */
+
 import { getTotalKg, GLOBAL_AVERAGE, INDIA_AVERAGE, SUSTAINABLE_TARGET } from './calculations'
 
+/**
+ * The system persona prompt that shapes EcoAI's tone and response style.
+ * Ensures responses are concise, actionable, and encouraging — never preachy.
+ * @constant {string}
+ */
 const SYSTEM_PROMPT = `You are EcoAI, a warm and practical carbon footprint advisor. 
 Your job is to make climate data feel personal, urgent, and actionable — not preachy or abstract.
 
@@ -11,6 +24,15 @@ Rules:
 - Use simple conversational language
 - Never be preachy or guilt-trip the user`
 
+/**
+ * Builds a structured context block from the user's live state for injection
+ * into the AI system prompt so the model has full situational awareness.
+ *
+ * @param {Object} footprint - Map of category names to kg CO₂e values.
+ * @param {Array<{title: string}>} completedActions - Actions completed today.
+ * @param {number} streak - User's current daily activity streak.
+ * @returns {string} Formatted context string for the system prompt.
+ */
 const buildContext = (footprint, completedActions, streak) => {
   const total = getTotalKg(footprint)
   const biggest = Object.entries(footprint).sort((a, b) => b[1] - a[1])[0]
@@ -24,6 +46,18 @@ User's current footprint context:
 `
 }
 
+/**
+ * Calls the Anthropic Claude API to generate a personalized EcoAI response.
+ * Requires a VITE_ANTHROPIC_API_KEY environment variable to be set.
+ *
+ * @async
+ * @param {Array<{role: string, content: string}>} messages - Conversation history.
+ * @param {Object} footprint - User's current daily footprint data.
+ * @param {Array<{title: string}>} completedActions - Actions completed today.
+ * @param {number} streak - Current user activity streak in days.
+ * @returns {Promise<string>} The AI-generated response text.
+ * @throws {Error} If the API key is missing or the API returns an error.
+ */
 export const callEcoAI = async (messages, footprint, completedActions, streak) => {
   const apiKey = import.meta.env.VITE_ANTHROPIC_API_KEY
   if (!apiKey) throw new Error('API key not configured')

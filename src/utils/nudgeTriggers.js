@@ -1,3 +1,38 @@
+/**
+ * @fileoverview Time-aware nudge trigger engine for EcoSelf.
+ * Generates contextual, behavior-change nudges based on a user's
+ * real-time footprint data and the current hour of the day.
+ * @module nudgeTriggers
+ */
+
+/**
+ * @typedef {Object} Nudge
+ * @property {string} id - Unique identifier for the nudge.
+ * @property {string} type - Category of the nudge (e.g. 'transport', 'food').
+ * @property {string} title - Short headline for the nudge card.
+ * @property {string} message - Detailed, personalized nudge message.
+ * @property {string} icon - Emoji icon representing the category.
+ * @property {'high'|'medium'|'low'} urgency - Visual urgency level.
+ * @property {string} action - CTA text for the primary action button.
+ */
+
+/**
+ * Evaluates the user's current footprint and returns up to 2 relevant nudges.
+ * Nudges are time-aware: morning nudges fire at commute hour, lunch nudges at midday.
+ * High-footprint categories trigger persistent nudges regardless of time.
+ *
+ * @param {Object} footprint - Map of category names to kg CO₂e values.
+ * @param {Array<{category: string}>} completedActions - List of completed actions for today.
+ * @param {Date|null} [forceDate=null] - Optional date override for testing purposes.
+ * @returns {Nudge[]} Array of up to 2 relevant nudge objects.
+ *
+ * @example
+ * const nudges = evaluateNudges(
+ *   { transport: 5, food: 4, energy: 1 },
+ *   [],
+ *   new Date() // or forceDate for tests
+ * )
+ */
 export const evaluateNudges = (footprint, completedActions, forceDate = null) => {
   const hour = (forceDate || new Date()).getHours()
   const nudges = []
