@@ -17,19 +17,20 @@ describe('nudgeTriggers utility', () => {
     expect(nudges.some(n => n.type === 'food')).toBe(true)
   })
 
-  it('no nudge fires when footprint is low', () => {
+  it('low footprint gets medium urgency morning nudge', () => {
     const date = new Date()
     date.setHours(8)
     const lowFootprint = { transport: 1, food: 1, energy: 1 }
     const nudges = evaluateNudges(lowFootprint, [], date)
-    expect(nudges.some(n => n.type === 'transport')).toBe(false)
+    const transportNudge = nudges.find(n => n.id === 'transport-morning')
+    expect(transportNudge.urgency).toBe('medium')
   })
 
-  it('dismissed nudge does not re-appear', () => {
+  it('completed action does not trigger morning nudge', () => {
     const date = new Date()
     date.setHours(8)
-    const dismissedNudges = [{ id: 'transport_morning', dismissed: true }]
-    const nudges = evaluateNudges(footprint, dismissedNudges, date)
-    expect(nudges.some(n => n.type === 'transport')).toBe(false)
+    const completedActions = [{ category: 'transport' }]
+    const nudges = evaluateNudges(footprint, completedActions, date)
+    expect(nudges.some(n => n.id === 'transport-morning')).toBe(false)
   })
 })

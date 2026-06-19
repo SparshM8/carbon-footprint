@@ -1,5 +1,5 @@
-export const evaluateNudges = (footprint, completedActions) => {
-  const hour = new Date().getHours()
+export const evaluateNudges = (footprint, completedActions, forceDate = null) => {
+  const hour = (forceDate || new Date()).getHours()
   const nudges = []
   const done = completedActions.map(a => a.category)
 

@@ -23,16 +23,16 @@ describe('calculations utility', () => {
   })
 
   it('getEquivalent returns string for all ranges', () => {
-    expect(getEquivalent(0.05)).toContain('soda')
-    expect(getEquivalent(0.5)).toContain('text messages')
-    expect(getEquivalent(3)).toContain('km')
-    expect(getEquivalent(10)).toContain('beef meals')
+    expect(getEquivalent(0.05)).toContain('banana')
+    expect(getEquivalent(0.5)).toContain('HD streaming')
+    expect(getEquivalent(3)).toContain('beef meals')
+    expect(getEquivalent(10)).toContain('hours in a plane')
   })
 
   it('getCO2Level returns correct bucket', () => {
     expect(getCO2Level(3).label).toBe('Sustainable')
-    expect(getCO2Level(6).label).toBe('Moderate')
-    expect(getCO2Level(10).label).toBe('High')
+    expect(getCO2Level(6).label).toBe('Below average')
+    expect(getCO2Level(10).label).toBe('Moderate')
     expect(getCO2Level(15).label).toBe('Critical')
   })
 })

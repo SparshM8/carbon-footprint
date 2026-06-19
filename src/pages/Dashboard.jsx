@@ -1,9 +1,10 @@
 import React, { useMemo } from 'react'
+import PropTypes from 'prop-types'
 import useStore from '../store/useStore'
 import FootprintRing from '../components/FootprintRing'
 import NudgeSystem from '../components/NudgeSystem'
 import { getTotalKg, getCO2Level, getEquivalent, GLOBAL_AVERAGE, INDIA_AVERAGE, SUSTAINABLE_TARGET, getLevelInfo } from '../utils/calculations'
-import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
+import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
 const CATEGORY_META = {
   transport: { label: 'Transport', icon: '🚗', color: '#378ADD' },
@@ -24,6 +25,12 @@ function CustomTooltip({ active, payload, label }) {
     )
   }
   return null
+}
+
+CustomTooltip.propTypes = {
+  active: PropTypes.bool,
+  payload: PropTypes.array,
+  label: PropTypes.string,
 }
 
 export default function Dashboard() {
@@ -90,7 +97,7 @@ export default function Dashboard() {
         {/* Donut ring */}
         <div className="mx-4 mt-4 md:mx-0 md:mt-0 bg-white/70 backdrop-blur-md rounded-xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden hover:-translate-y-1 hover:shadow-lg hover:shadow-green-900/10 transition-all duration-300 flex flex-col">
           <div className="px-4 pt-3 pb-1 flex items-center justify-between flex-shrink-0">
-            <h2 className="text-sm font-semibold text-gray-800">Today's breakdown</h2>
+            <h2 className="text-sm font-semibold text-gray-800">Today&apos;s breakdown</h2>
             <span className="text-xs text-gray-400">{getEquivalent(total)}</span>
           </div>
           <div className="flex-1 flex items-center justify-center pb-2">
@@ -175,7 +182,7 @@ export default function Dashboard() {
               onClick={() => setPage('actions')}
               className="w-full bg-forest-600 hover:bg-forest-700 active:scale-95 text-white text-sm font-medium py-3 rounded-xl transition-all duration-200"
             >
-              View today's challenges →
+              View today&apos;s challenges →
             </button>
           </div>
         </div>

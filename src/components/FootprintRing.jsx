@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import PropTypes from 'prop-types'
 import { getTotalKg, getCO2Level } from '../utils/calculations'
 
 const COLORS = {
@@ -89,4 +90,8 @@ export default function FootprintRing({ footprint }) {
       </div>
     </div>
   )
+}
+
+FootprintRing.propTypes = {
+  footprint: PropTypes.object.isRequired
 }

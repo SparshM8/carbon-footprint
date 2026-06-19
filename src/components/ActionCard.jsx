@@ -1,4 +1,5 @@
 import React, { useState } from 'react'
+import PropTypes from 'prop-types'
 import confetti from 'canvas-confetti'
 import { getEquivalent } from '../utils/calculations'
 
@@ -74,4 +75,17 @@ export default function ActionCard({ action, onComplete }) {
       </button>
     </div>
   )
+}
+
+ActionCard.propTypes = {
+  action: PropTypes.shape({
+    id: PropTypes.string.isRequired,
+    title: PropTypes.string.isRequired,
+    icon: PropTypes.string.isRequired,
+    impact: PropTypes.number.isRequired,
+    difficulty: PropTypes.string.isRequired,
+    xp: PropTypes.number.isRequired,
+    completed: PropTypes.bool
+  }).isRequired,
+  onComplete: PropTypes.func.isRequired
 }

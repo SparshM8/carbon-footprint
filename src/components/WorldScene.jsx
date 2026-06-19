@@ -1,4 +1,5 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import { getWorldHealth } from '../utils/calculations'
 
 function lerp(a, b, t) { return a + (b - a) * t }
@@ -112,4 +113,9 @@ export default function WorldScene({ footprint, streak }) {
       </svg>
     </div>
   )
+}
+
+WorldScene.propTypes = {
+  footprint: PropTypes.object.isRequired,
+  streak: PropTypes.number.isRequired
 }
