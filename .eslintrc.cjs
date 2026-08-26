@@ -15,7 +15,8 @@ module.exports = {
     describe: 'readonly',
     it: 'readonly',
     expect: 'readonly',
-    beforeEach: 'readonly'
+    beforeEach: 'readonly',
+    global: 'readonly'
   },
   rules: {
     'react/jsx-no-target-blank': 'off',
