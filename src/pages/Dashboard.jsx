@@ -53,11 +53,14 @@ export default function Dashboard() {
   return (
     <div className="pb-4">
       {/* Header */}
-      <div className="bg-gradient-to-r from-forest-900 via-forest-800 to-teal-900 px-4 pt-12 pb-4 shadow-md rounded-b-3xl md:rounded-3xl md:mx-4 md:mt-4">
+      <div className="relative overflow-hidden bg-[#123c32] px-5 pt-8 pb-5 shadow-xl shadow-emerald-950/10 rounded-b-[2rem] md:rounded-[2rem] md:mx-4 md:mt-4">
+        <img src="/eco-canopy.png" alt="Sunlight through a green forest canopy" className="absolute inset-0 size-full object-cover opacity-20 mix-blend-screen" />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#123c32] via-[#123c32]/95 to-transparent" />
+        <div className="relative">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-forest-400 text-xs font-medium">Good morning, {user.name} 👋 ({user.location || 'India'})</p>
-            <h1 className="text-white text-2xl font-semibold mt-0.5">
+            <p className="text-emerald-300 text-xs font-semibold tracking-wide">GOOD MORNING, {user.name.toUpperCase()} · {user.location || 'INDIA'}</p>
+            <h1 className="text-white text-3xl font-semibold mt-1">
               {total} <span className="text-forest-400 text-base font-normal">kg CO₂ today</span>
             </h1>
             <div className="flex items-center gap-2 mt-1">
@@ -70,7 +73,8 @@ export default function Dashboard() {
               <span className="text-forest-400 text-xs">🔥 {user.streak}-day streak</span>
             </div>
           </div>
-          <div className="text-right flex flex-col items-end gap-1">
+            <div className="text-right flex flex-col items-end gap-1">
+              <span className="hidden sm:block text-[10px] text-emerald-200/70 uppercase tracking-widest">Personal climate score</span>
             <div className="w-11 h-11 rounded-full bg-forest-700 border-2 border-forest-500 flex items-center justify-center text-xl shadow-xs">
               🌱
             </div>
@@ -97,6 +101,7 @@ export default function Dashboard() {
             />
           </div>
         </div>
+        </div>
       </div>
 
       {/* Nudges */}
@@ -104,7 +109,7 @@ export default function Dashboard() {
 
       <div className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:px-4 md:mt-4">
         {/* Donut ring */}
-        <div className="mx-4 mt-4 md:mx-0 md:mt-0 bg-white/70 backdrop-blur-md rounded-xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden hover:-translate-y-1 hover:shadow-lg hover:shadow-green-900/10 transition-all duration-300 flex flex-col">
+        <div className="mx-4 mt-4 md:mx-0 md:mt-0 glass-card rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-lg hover:shadow-green-900/10 transition-all duration-300 flex flex-col">
           <div className="px-4 pt-3 pb-1 flex items-center justify-between flex-shrink-0">
             <h2 className="text-sm font-semibold text-gray-800">Today&apos;s breakdown</h2>
             <span className="text-xs text-gray-400">{getEquivalent(total)}</span>
@@ -117,7 +122,7 @@ export default function Dashboard() {
         {/* Center column */}
         <div className="flex flex-col gap-3 mx-4 mt-3 md:mx-0 md:mt-0">
           {/* Biggest lever */}
-          <div className="bg-amber-50/80 backdrop-blur-md border border-white/50 rounded-xl p-3 flex gap-3 items-start h-full hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300">
+          <div className="bg-[#fff8eb] border border-amber-100 rounded-2xl p-4 flex gap-3 items-start h-full hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300">
             <span className="text-2xl">{CATEGORY_META[biggestCategory[0]]?.icon}</span>
             <div>
               <p className="text-sm font-medium text-amber-900">
@@ -162,7 +167,7 @@ export default function Dashboard() {
         {/* Right column */}
         <div className="flex flex-col gap-3 mx-4 mt-3 md:mx-0 md:mt-0 lg:col-span-1 md:col-span-2">
           {/* Weekly chart */}
-          <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex-1 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] transition-all duration-300">
+          <div className="glass-card rounded-2xl p-4 flex-1 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] transition-all duration-300">
             <h2 className="text-sm font-semibold text-gray-800 mb-3">This week</h2>
             <ResponsiveContainer width="100%" height={120}>
               <BarChart data={weeklyData} barSize={24} barGap={4}>

@@ -77,11 +77,14 @@ export default function Onboarding() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-forest-900 to-forest-700 flex flex-col">
+    <div className="min-h-screen bg-[#123c32] flex flex-col relative overflow-hidden">
+      <div className="absolute inset-0 bg-[url('/eco-canopy.png')] bg-cover bg-center opacity-20" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#123c32]/90 to-[#123c32]" />
+      <div className="relative flex flex-col flex-1">
       {/* Header */}
       <div className="flex-shrink-0 pt-14 pb-8 px-6 text-center">
-        <div className="text-5xl mb-3">🌱</div>
-        <h1 className="text-2xl font-semibold text-white">EcoSelf</h1>
+        <div className="mx-auto mb-4 grid size-14 place-items-center rounded-2xl bg-emerald-300 text-[#123c32] text-2xl shadow-lg shadow-black/10">✦</div>
+        <h1 className="text-3xl font-semibold text-white tracking-tight">EcoSelf<span className="text-emerald-300">.</span></h1>
         <p className="text-forest-300 text-sm mt-1">Your personal carbon footprint companion</p>
       </div>
 
@@ -102,7 +105,7 @@ export default function Onboarding() {
       </div>
 
       {/* Card */}
-      <div className="flex-1 bg-white rounded-t-3xl px-6 pt-7 pb-8 overflow-y-auto">
+      <div className="relative flex-1 bg-[#f7faf6] rounded-t-[2rem] px-6 pt-8 pb-8 overflow-y-auto shadow-[0_-20px_60px_rgba(0,0,0,0.12)]">
         <h2 className="text-lg font-semibold text-gray-900 mb-1">{STEPS[step]}</h2>
 
         {/* Step 0: Profile */}
@@ -279,6 +282,7 @@ export default function Onboarding() {
             {step < 2 ? 'Continue →' : 'Start tracking 🌱'}
           </button>
         </div>
+      </div>
       </div>
     </div>
   )
