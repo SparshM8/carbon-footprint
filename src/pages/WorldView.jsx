@@ -1,13 +1,37 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import useStore from '../store/useStore'
 import WorldScene from '../components/WorldScene'
+import ShareImpactModal from '../components/ShareImpactModal'
 import { getWorldHealth, getTotalKg, SUSTAINABLE_TARGET } from '../utils/calculations'
-import { Leaf, Sun, Waves, Trees, Sparkles, Award } from 'lucide-react'
+import { Leaf, Sun, Waves, Trees, Sparkles, Award, Volume2, VolumeX, Moon, Sunset, Share2 } from 'lucide-react'
+import { startNatureSound, stopNatureSound } from '../utils/natureAudio'
 
 export default function WorldView() {
   const { footprint, user, achievements } = useStore()
+  const [timeOfDay, setTimeOfDay] = useState('day') // 'day' | 'sunset' | 'night'
+  const [soundPlaying, setSoundPlaying] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+
   const health = getWorldHealth(footprint, user?.streak || 0)
   const total = getTotalKg(footprint)
+
+  useEffect(() => {
+    return () => {
+      stopNatureSound()
+    }
+  }, [])
+
+  const toggleSound = () => {
+    if (soundPlaying) {
+      stopNatureSound()
+      setSoundPlaying(false)
+    } else {
+      const started = startNatureSound()
+      if (started) {
+        setSoundPlaying(true)
+      }
+    }
+  }
 
   const healthLabel = health >= 75
     ? { label: 'Thriving', color: '#005a3c', bg: '#d5f3df', icon: '🌿' }
@@ -69,39 +93,95 @@ export default function WorldView() {
         <p className="flex items-center gap-2 text-sm font-medium text-[#005a3c]">
           <span className="size-2 rounded-full bg-[#005a3c]" /> Dynamic visual ecosystem
         </p>
-        <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-[#062b20] md:text-5xl">
-          Your choices shape this <em className="font-serif text-[#005a3c]">living world.</em>
-        </h1>
-        <p className="max-w-xl text-sm leading-relaxed text-[#6f7f78] md:text-base">
-          An interactive, living reflection of your carbon habits. As your daily footprint drops and your streak grows, this ecosystem transforms with lush trees, clean skies, and flowing waters.
-        </p>
+        <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4">
+          <div>
+            <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-[#062b20] md:text-5xl">
+              Your choices shape this <em className="font-serif text-[#005a3c]">living world.</em>
+            </h1>
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-[#6f7f78] md:text-base">
+              An interactive, living reflection of your carbon habits. As your daily footprint drops and your streak grows, this ecosystem transforms with lush trees, clean skies, and flowing waters.
+            </p>
+          </div>
+          <button
+            onClick={() => setShowShareModal(true)}
+            className="inline-flex items-center gap-2 rounded-full border border-[#ded8c9] bg-[#fffdf8] px-4 py-2.5 text-xs font-semibold text-[#005a3c] shadow-xs hover:bg-[#f3efe4] transition self-start md:self-auto"
+          >
+            <Share2 className="size-3.5" /> Share My World
+          </button>
+        </div>
       </header>
 
       <div className="grid gap-6 lg:grid-cols-[1.75fr_1fr]">
         {/* Left Column: Interactive World Scene */}
         <div className="flex flex-col gap-4">
           <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-5 shadow-sm">
-            {/* Top Scene Bar */}
-            <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-[#f0ece1]">
+            {/* Top Scene Bar with Time-of-Day & Audio Controls */}
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3.5 mb-3 border-b border-[#f0ece1]">
               <div className="flex items-center gap-2">
                 <span className="text-lg">🌍</span>
-                <span className="font-semibold text-sm text-[#062b20]">Interactive Valley View</span>
-              </div>
-              <div className="flex items-center gap-2">
+                <span className="font-semibold text-sm text-[#062b20]">Interactive Valley</span>
                 <span
-                  className="rounded-full px-2.5 py-1 text-xs font-semibold flex items-center gap-1"
+                  className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold flex items-center gap-1"
                   style={{ background: healthLabel.bg, color: healthLabel.color }}
                 >
                   <span>{healthLabel.icon}</span> {healthLabel.label}
                 </span>
-                <span className="text-xs text-[#718079] font-medium hidden sm:inline">
-                  {health}% Ecosystem Health
-                </span>
+              </div>
+
+              {/* Time of Day & Audio Controls */}
+              <div className="flex items-center gap-2">
+                {/* Time Segmented Control */}
+                <div className="flex items-center bg-[#f0ede2] p-1 rounded-full text-xs">
+                  <button
+                    onClick={() => setTimeOfDay('day')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-medium transition ${
+                      timeOfDay === 'day'
+                        ? 'bg-white text-[#005a3c] shadow-xs font-semibold'
+                        : 'text-[#718079] hover:text-[#062b20]'
+                    }`}
+                  >
+                    <Sun className="size-3" /> Day
+                  </button>
+                  <button
+                    onClick={() => setTimeOfDay('sunset')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-medium transition ${
+                      timeOfDay === 'sunset'
+                        ? 'bg-white text-[#ea580c] shadow-xs font-semibold'
+                        : 'text-[#718079] hover:text-[#062b20]'
+                    }`}
+                  >
+                    <Sunset className="size-3" /> Sunset
+                  </button>
+                  <button
+                    onClick={() => setTimeOfDay('night')}
+                    className={`flex items-center gap-1 px-2.5 py-1 rounded-full font-medium transition ${
+                      timeOfDay === 'night'
+                        ? 'bg-white text-[#38bdf8] shadow-xs font-semibold'
+                        : 'text-[#718079] hover:text-[#062b20]'
+                    }`}
+                  >
+                    <Moon className="size-3" /> Night
+                  </button>
+                </div>
+
+                {/* Ambient Nature Sound Toggle */}
+                <button
+                  onClick={toggleSound}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition ${
+                    soundPlaying
+                      ? 'border-[#005a3c] bg-[#eafbba] text-[#005a3c]'
+                      : 'border-[#ded8c9] bg-[#fffdf8] text-[#718079] hover:bg-[#f3efe4]'
+                  }`}
+                  title={soundPlaying ? 'Mute ambient nature sound' : 'Play ambient nature sound'}
+                >
+                  {soundPlaying ? <Volume2 className="size-3.5 text-[#005a3c]" /> : <VolumeX className="size-3.5" />}
+                  <span>{soundPlaying ? 'Sound On' : 'Nature Sound'}</span>
+                </button>
               </div>
             </div>
 
             {/* The SVG Illustration */}
-            <WorldScene footprint={footprint} streak={user?.streak || 0} />
+            <WorldScene footprint={footprint} streak={user?.streak || 0} timeOfDay={timeOfDay} />
 
             {/* Health Meter & Explanation */}
             <div className="mt-5 pt-4 border-t border-[#f0ece1]">
@@ -135,7 +215,7 @@ export default function WorldView() {
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#52645a]">
                   <Sun className="size-4 text-[#d97706]" />
-                  <span>{health > 50 ? 'Clean Sky' : 'Misty Haze'}</span>
+                  <span>{timeOfDay === 'night' ? 'Starry Sky' : health > 50 ? 'Clean Sky' : 'Misty Haze'}</span>
                 </div>
                 <div className="flex items-center gap-2 text-xs text-[#52645a]">
                   <Waves className="size-4 text-[#0284c7]" />
@@ -211,6 +291,8 @@ export default function WorldView() {
           </div>
         </div>
       </div>
+
+      <ShareImpactModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
     </div>
   )
 }
