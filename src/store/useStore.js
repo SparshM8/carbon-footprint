@@ -8,11 +8,13 @@ const useStore = create(
       // User profile
       user: {
         name: 'Alex',
+        location: 'Bengaluru',
         avatar: '🌱',
         level: 3,
         xp: 740,
         xpToNext: 1000,
         streak: 7,
+        lastActiveDate: new Date().toDateString(),
         joinedDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
       },
 
@@ -54,6 +56,9 @@ const useStore = create(
           dismissed: false,
         },
       ],
+
+      // Dismissed nudge IDs (including dynamic nudges)
+      dismissedNudgeIds: [],
 
       // Team/social data
       team: {
@@ -134,25 +139,90 @@ const useStore = create(
         const action = state.actions.find(a => a.id === actionId)
         if (!action) return
 
+        const todayStr = new Date().toDateString()
+        const lastActive = state.user?.lastActiveDate
+        const newStreak = lastActive === todayStr ? (state.user?.streak || 1) : ((state.user?.streak || 0) + 1)
+        const newXp = (state.user?.xp || 0) + action.xp
+        const currentCategoryVal = state.footprint[action.category] || 0
+        const newCategoryVal = Math.max(0, parseFloat((currentCategoryVal - action.impact * 0.1).toFixed(1)))
+        
+        const newFootprint = {
+          ...state.footprint,
+          [action.category]: newCategoryVal
+        }
+        const newCompleted = [...state.completedActions, { ...action, completedAt: new Date().toISOString() }]
+
+        const updatedAchievements = (state.achievements || []).map(ach => {
+          if (ach.earned) return ach
+          let earned = false
+          if (ach.id === 'a1' && newCompleted.length >= 1) earned = true
+          if (ach.id === 'a2' && newStreak >= 7) earned = true
+          if (ach.id === 'a4' && action.category === 'transport') earned = true
+          if (ach.id === 'a5' && action.category === 'transport') earned = true
+          if (ach.id === 'a6' && action.category === 'food') earned = true
+          return earned ? { ...ach, earned: true, date: new Date().toISOString().split('T')[0] } : ach
+        })
+
         set({
-          completedActions: [...state.completedActions, { ...action, completedAt: new Date().toISOString() }],
+          completedActions: newCompleted,
           actions: state.actions.map(a => a.id === actionId ? { ...a, completed: true } : a),
           user: {
             ...state.user,
-            xp: state.user.xp + action.xp,
-            streak: state.user.streak,
+            xp: newXp,
+            streak: newStreak,
+            lastActiveDate: todayStr,
           },
-          footprint: {
-            ...state.footprint,
-            [action.category]: Math.max(0, (state.footprint[action.category] || 0) - action.impact * 0.1)
-          }
+          footprint: newFootprint,
+          achievements: updatedAchievements,
         })
       },
 
       dismissNudge: (nudgeId) => {
         set(state => ({
+          dismissedNudgeIds: [...(state.dismissedNudgeIds || []), nudgeId],
           nudges: state.nudges.map(n => n.id === nudgeId ? { ...n, dismissed: true } : n)
         }))
+      },
+
+      logDailyActivity: ({ category, impact, label }) => {
+        const state = get()
+        const todayStr = new Date().toDateString()
+        const currentVal = state.footprint[category] || 0
+        const newFootprint = {
+          ...state.footprint,
+          [category]: Math.max(0, parseFloat((currentVal + impact).toFixed(1)))
+        }
+        const xpReward = Math.max(15, Math.round(Math.abs(impact) * 10))
+        const newXp = (state.user?.xp || 0) + xpReward
+        const newStreak = state.user?.lastActiveDate === todayStr ? (state.user?.streak || 1) : ((state.user?.streak || 0) + 1)
+
+        set({
+          footprint: newFootprint,
+          user: {
+            ...state.user,
+            xp: newXp,
+            streak: newStreak,
+            lastActiveDate: todayStr,
+          }
+        })
+        get().checkAchievements()
+      },
+
+      checkAchievements: () => {
+        const state = get()
+        const total = Object.values(state.footprint).reduce((a, b) => a + b, 0)
+        const updatedAchievements = (state.achievements || []).map(ach => {
+          if (ach.earned) return ach
+          let earned = false
+          if (ach.id === 'a1' && state.completedActions.length >= 1) earned = true
+          if (ach.id === 'a2' && (state.user?.streak || 0) >= 7) earned = true
+          if (ach.id === 'a3' && total <= 5.0) earned = true
+          if (ach.id === 'a4' && total <= 6.0) earned = true
+          if (ach.id === 'a5' && state.completedActions.some(a => a.category === 'transport')) earned = true
+          if (ach.id === 'a6' && state.completedActions.some(a => a.category === 'food')) earned = true
+          return earned ? { ...ach, earned: true, date: new Date().toISOString().split('T')[0] } : ach
+        })
+        set({ achievements: updatedAchievements })
       },
 
       completeOnboarding: (data) => {
@@ -183,6 +253,8 @@ const useStore = create(
         completedActions: state.completedActions,
         onboardingComplete: state.onboardingComplete,
         weeklyData: state.weeklyData,
+        achievements: state.achievements,
+        dismissedNudgeIds: state.dismissedNudgeIds,
       })
     }
   )

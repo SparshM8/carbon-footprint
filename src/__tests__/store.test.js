@@ -1,7 +1,7 @@
 /**
  * @fileoverview Comprehensive tests for the Zustand application state store.
  * Tests cover action completion, XP rewards, footprint updates, nudge
- * dismissal, and state integrity across sequential operations.
+ * dismissal, daily activity logging, achievement unlocks, and state integrity.
  */
 import useStore from '../store/useStore'
 
@@ -9,7 +9,7 @@ describe('Zustand store', () => {
   /** Reset to a clean, known state before each test */
   beforeEach(() => {
     useStore.setState({
-      user: { xp: 100, streak: 3, level: 1 },
+      user: { name: 'Alex', xp: 100, streak: 3, level: 1, lastActiveDate: 'Mon Jan 01 2024' },
       footprint: { transport: 5, food: 5, energy: 2, shopping: 1, digital: 0.3 },
       actions: [
         { id: 'act1', category: 'transport', impact: 2, xp: 50, title: 'Take the bus', completed: false },
@@ -19,6 +19,12 @@ describe('Zustand store', () => {
       nudges: [
         { id: 'n1', type: 'transport', dismissed: false },
         { id: 'n2', type: 'food', dismissed: false },
+      ],
+      dismissedNudgeIds: [],
+      achievements: [
+        { id: 'a1', title: 'First Step', earned: false },
+        { id: 'a2', title: '7-Day Streak', earned: false },
+        { id: 'a4', title: 'Carbon Cutter', earned: false },
       ],
       chatMessages: [],
     })
@@ -65,6 +71,12 @@ describe('Zustand store', () => {
       useStore.getState().completeAction('act1')
       expect(useStore.getState().footprint.food).toBe(foodBefore)
     })
+
+    it('unlocks First Step achievement on action completion', () => {
+      useStore.getState().completeAction('act1')
+      const a1 = useStore.getState().achievements.find(a => a.id === 'a1')
+      expect(a1.earned).toBe(true)
+    })
   })
 
   // ─── dismissNudge ─────────────────────────────────────────────────────────
@@ -85,6 +97,30 @@ describe('Zustand store', () => {
       useStore.getState().dismissNudge('n2')
       const { nudges } = useStore.getState()
       expect(nudges.every(n => n.dismissed)).toBe(true)
+    })
+
+    it('records dynamic nudge id in dismissedNudgeIds', () => {
+      useStore.getState().dismissNudge('transport-morning')
+      expect(useStore.getState().dismissedNudgeIds).toContain('transport-morning')
+    })
+  })
+
+  // ─── logDailyActivity ─────────────────────────────────────────────────────
+
+  describe('logDailyActivity', () => {
+    it('increases footprint category and awards XP', () => {
+      const initialTransport = useStore.getState().footprint.transport
+      const initialXp = useStore.getState().user.xp
+
+      useStore.getState().logDailyActivity({
+        category: 'transport',
+        impact: 2.1,
+        label: 'Solo Car Ride'
+      })
+
+      const state = useStore.getState()
+      expect(state.footprint.transport).toBe(parseFloat((initialTransport + 2.1).toFixed(1)))
+      expect(state.user.xp).toBeGreaterThan(initialXp)
     })
   })
 

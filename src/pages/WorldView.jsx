@@ -15,26 +15,31 @@ export default function WorldView() {
 
   const worldEvents = [
     health > 60 && {
+      id: 'trees-sprouted',
       icon: '🌳', color: '#16a34a',
       title: `${Math.max(1, Math.floor(user.streak / 2))} new trees sprouted`,
       msg: 'Your consistent actions this week grew the forest. Keep going!'
     },
     health > 50 && {
+      id: 'sky-clearing',
       icon: '☀️', color: '#d97706',
       title: 'Sky is clearing',
       msg: `Transport choices reduced air haze. ${(100 - health)}% smog remaining.`
     },
     total > 8 && {
+      id: 'river-dropping',
       icon: '🌊', color: '#ef4444',
       title: 'River level dropping',
       msg: 'Shopping emissions are straining the ecosystem. Try one second-hand purchase.'
     },
     health <= 50 && {
+      id: 'forest-thinning',
       icon: '🍂', color: '#ea580c',
       title: 'Forest thinning',
       msg: 'High emissions are affecting tree growth. Complete 2 actions today to reverse this.'
     },
     user.streak >= 7 && {
+      id: 'streak-bonus',
       icon: '🔥', color: '#f59e0b',
       title: `${user.streak}-day streak bonus!`,
       msg: 'Your consistency adds +14% to ecosystem health. Incredible work!'

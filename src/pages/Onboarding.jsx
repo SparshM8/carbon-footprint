@@ -1,6 +1,19 @@
 import React, { useState } from 'react'
 import useStore from '../store/useStore'
 
+const INDIA_CITIES = [
+  'Bengaluru',
+  'Mumbai',
+  'Delhi NCR',
+  'Hyderabad',
+  'Chennai',
+  'Pune',
+  'Kolkata',
+  'Ahmedabad',
+  'Jaipur',
+  'Other'
+]
+
 const TRANSPORT_OPTIONS = [
   { id: 'car', label: 'Car', icon: '🚗', factor: 4.2 },
   { id: 'bus', label: 'Bus', icon: '🚌', factor: 1.8 },
@@ -29,6 +42,7 @@ export default function Onboarding() {
   const [step, setStep] = useState(0)
   const [data, setData] = useState({
     name: '',
+    location: 'Bengaluru',
     transport: null,
     kmPerDay: 15,
     diet: null,
@@ -39,7 +53,7 @@ export default function Onboarding() {
   const update = (key, val) => setData(d => ({ ...d, [key]: val }))
 
   const canNext = () => {
-    if (step === 0) return data.name.trim().length > 1
+    if (step === 0) return data.name.trim().length > 1 && !!data.location
     if (step === 1) return data.transport && data.diet
     if (step === 2) return data.home
     return true
@@ -59,7 +73,7 @@ export default function Onboarding() {
       digital: 0.3,
     }
 
-    completeOnboarding({ name: data.name, footprint })
+    completeOnboarding({ name: data.name, location: data.location, footprint })
   }
 
   return (
@@ -94,7 +108,7 @@ export default function Onboarding() {
         {/* Step 0: Profile */}
         {step === 0 && (
           <div className="space-y-4 mt-4">
-            <p className="text-sm text-gray-500">Let's get started. What's your name?</p>
+            <p className="text-sm text-gray-500">Let&apos;s get started. Tell us about yourself.</p>
             <div>
               <label className="text-xs font-medium text-gray-600 block mb-1.5" htmlFor="name-input">Your name</label>
               <input
@@ -106,6 +120,19 @@ export default function Onboarding() {
                 autoFocus
                 className="w-full px-3 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent text-sm"
               />
+            </div>
+            <div>
+              <label className="text-xs font-medium text-gray-600 block mb-1.5" htmlFor="city-select">Your city in India</label>
+              <select
+                id="city-select"
+                value={data.location}
+                onChange={e => update('location', e.target.value)}
+                className="w-full px-3 py-3 rounded-xl border border-gray-200 bg-gray-50 text-gray-900 focus:outline-none focus:ring-2 focus:ring-forest-500 focus:border-transparent text-sm"
+              >
+                {INDIA_CITIES.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
+              </select>
             </div>
             <div className="bg-forest-50 border border-forest-100 rounded-xl p-4 mt-4">
               <p className="text-xs text-forest-700 leading-relaxed">
@@ -127,7 +154,7 @@ export default function Onboarding() {
                     onClick={() => update('transport', opt.id)}
                     className={`flex items-center gap-2 p-3 rounded-xl border text-left transition-all ${
                       data.transport === opt.id
-                        ? 'border-forest-500 bg-forest-50 text-forest-800'
+                        ? 'border-forest-500 bg-forest-50 text-forest-800 ring-2 ring-forest-500/20'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -144,7 +171,7 @@ export default function Onboarding() {
                 <input
                   type="range" min="1" max="100" value={data.kmPerDay}
                   onChange={e => update('kmPerDay', +e.target.value)}
-                  className="w-full"
+                  className="w-full accent-forest-600"
                   aria-label="Daily km"
                 />
                 <div className="flex justify-between text-xs text-gray-400 mt-0.5">
@@ -154,7 +181,7 @@ export default function Onboarding() {
             )}
 
             <div>
-              <p className="text-xs font-medium text-gray-600 mb-2">What's your diet like?</p>
+              <p className="text-xs font-medium text-gray-600 mb-2">What&apos;s your diet like?</p>
               <div className="space-y-2">
                 {DIET_OPTIONS.map(opt => (
                   <button
@@ -162,7 +189,7 @@ export default function Onboarding() {
                     onClick={() => update('diet', opt.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                       data.diet === opt.id
-                        ? 'border-forest-500 bg-forest-50 text-forest-800'
+                        ? 'border-forest-500 bg-forest-50 text-forest-800 ring-2 ring-forest-500/20'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -190,7 +217,7 @@ export default function Onboarding() {
                     onClick={() => update('home', opt.id)}
                     className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition-all ${
                       data.home === opt.id
-                        ? 'border-forest-500 bg-forest-50 text-forest-800'
+                        ? 'border-forest-500 bg-forest-50 text-forest-800 ring-2 ring-forest-500/20'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -217,7 +244,7 @@ export default function Onboarding() {
                     onClick={() => update('shopping', opt.id)}
                     className={`flex flex-col items-center gap-1 p-3 rounded-xl border text-center transition-all ${
                       data.shopping === opt.id
-                        ? 'border-forest-500 bg-forest-50 text-forest-800'
+                        ? 'border-forest-500 bg-forest-50 text-forest-800 ring-2 ring-forest-500/20'
                         : 'border-gray-200 bg-white text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -245,7 +272,7 @@ export default function Onboarding() {
             disabled={!canNext()}
             className={`flex-1 py-3 rounded-xl text-sm font-medium transition-all ${
               canNext()
-                ? 'bg-forest-600 text-white hover:bg-forest-700 active:scale-95'
+                ? 'bg-forest-600 text-white hover:bg-forest-700 active:scale-95 shadow-md shadow-forest-900/10'
                 : 'bg-gray-100 text-gray-400 cursor-not-allowed'
             }`}
           >

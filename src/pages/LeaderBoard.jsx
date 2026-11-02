@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import useStore from '../store/useStore'
 import { getTotalKg } from '../utils/calculations'
 
@@ -15,11 +15,22 @@ const BADGE_META = {
 export default function LeaderBoard() {
   const { team, footprint, user } = useStore()
   const myTotal = getTotalKg(footprint)
+  const [copied, setCopied] = useState(false)
 
-  const sorted = [...team.members].sort((a, b) => a.footprint - b.footprint)
+  // Integrate live user footprint into team list
+  const membersWithMe = team.members.map(m => m.id === 1 ? { ...m, footprint: myTotal } : m)
+  const sorted = [...membersWithMe].sort((a, b) => a.footprint - b.footprint)
   const myRank = sorted.findIndex(m => m.id === 1) + 1
-  const teamSaved = team.members.reduce((sum, m) => sum + Math.max(0, 14 - m.footprint), 0).toFixed(1)
+  const teamSaved = membersWithMe.reduce((sum, m) => sum + Math.max(0, 14 - m.footprint), 0).toFixed(1)
   const teamGoalPct = Math.min(100, Math.round((+teamSaved / team.weeklyGoal) * 100))
+  const personAhead = myRank > 1 ? sorted[myRank - 2] : null
+  const diffKg = personAhead ? Math.abs(personAhead.footprint - myTotal).toFixed(1) : '0.0'
+
+  const handleShare = () => {
+    navigator.clipboard?.writeText?.(window.location.href)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
 
   return (
     <div className="pb-4">
@@ -48,7 +59,7 @@ export default function LeaderBoard() {
         <div className="md:col-span-2 flex flex-col gap-4">
           {/* Rankings */}
           <div className="mx-4 mt-4 md:mx-0 md:mt-0">
-            <h2 className="text-sm font-semibold text-gray-800 mb-3">This week's ranking</h2>
+            <h2 className="text-sm font-semibold text-gray-800 mb-3">This week&apos;s ranking</h2>
             <div className="space-y-2 md:grid md:grid-cols-2 md:gap-4 md:space-y-0">
               {sorted.map((member, idx) => {
                 const isMe = member.id === 1
@@ -59,7 +70,7 @@ export default function LeaderBoard() {
                   <div
                     key={member.id}
                     className={`bg-white/70 backdrop-blur-md border-white/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] border rounded-xl p-3 flex items-center gap-3 transition-all ${
-                      isMe ? 'border-forest-200 shadow-sm bg-green-50/50' : 'hover:border-gray-300'
+                      isMe ? 'border-forest-200 shadow-sm bg-green-50/50 ring-1 ring-forest-400/30' : 'hover:border-gray-300'
                     }`}
                   >
                     {/* Rank */}
@@ -80,7 +91,7 @@ export default function LeaderBoard() {
                     {/* Name & badge */}
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className={`text-sm font-medium truncate ${isMe ? 'text-forest-800' : 'text-gray-900'}`}>
+                        <span className={`text-sm font-medium truncate ${isMe ? 'text-forest-800 font-semibold' : 'text-gray-900'}`}>
                           {isMe ? user.name : member.name}
                         </span>
                         {isMe && <span className="text-[9px] bg-forest-100 text-forest-700 px-1.5 py-0.5 rounded-full font-medium">you</span>}
@@ -96,7 +107,7 @@ export default function LeaderBoard() {
                     {/* Footprint */}
                     <div className="text-right flex-shrink-0">
                       <div className={`text-sm font-semibold ${footprintVal <= 7 ? 'text-green-600' : footprintVal <= 11 ? 'text-amber-600' : 'text-red-500'}`}>
-                        {footprintVal} kg
+                        {footprintVal.toFixed(1)} kg
                       </div>
                       <div className="text-[10px] text-gray-400">CO₂/day</div>
                     </div>
@@ -129,29 +140,35 @@ export default function LeaderBoard() {
             </div>
           </div>
 
-          {/* Motivational tip */}
-          {myRank > 1 && (
-            <div className="bg-amber-50/50 backdrop-blur-md border border-amber-100 rounded-xl p-4">
-              <p className="text-xs text-amber-800 leading-relaxed">
-                ⚡ You're <strong>{(sorted[myRank - 1]?.footprint - myTotal).toFixed(1)} kg</strong> away from rank #{myRank - 1}. Complete one more action today to climb the board!
+          {/* Motivational tip if behind someone */}
+          {myRank > 1 && personAhead && (
+            <div className="bg-amber-50/70 backdrop-blur-md border border-amber-200 rounded-xl p-4 shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
+              <p className="text-xs text-amber-900 leading-relaxed">
+                ⚡ You&apos;re only <strong>{diffKg} kg</strong> away from #{myRank - 1} ({personAhead.name}). Complete one challenge today to climb the leaderboard!
               </p>
             </div>
           )}
-          {/* Nudge */}
-          <div className="bg-green-50/70 backdrop-blur-md border border-white/50 rounded-xl p-4 flex gap-3 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
-            <span className="text-xl flex-shrink-0">💡</span>
-            <p className="text-xs text-green-800 leading-relaxed">
-              🏆 You're leading the team! Keep it up and inspire others to reduce their footprint too.
-            </p>
-          </div>
+
+          {/* Nudge if leading */}
+          {myRank === 1 && (
+            <div className="bg-green-50/70 backdrop-blur-md border border-emerald-200 rounded-xl p-4 flex gap-3 shadow-[0_4px_20px_rgb(0,0,0,0.03)]">
+              <span className="text-xl flex-shrink-0">🏆</span>
+              <p className="text-xs text-green-900 leading-relaxed">
+                <strong>You&apos;re leading the team!</strong> Keep it up and inspire others to reduce their footprint too.
+              </p>
+            </div>
+          )}
 
           {/* Invite */}
           <div className="bg-white/50 backdrop-blur-md border border-dashed border-gray-300 rounded-xl p-4 text-center shadow-[0_4px_20px_rgb(0,0,0,0.02)]">
             <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2 text-gray-500">👥</div>
             <div className="text-sm font-medium text-gray-800">Invite a friend</div>
-            <div className="text-xs text-gray-500 mt-0.5">More members = more accountability</div>
-            <button className="mt-3 text-xs font-medium text-forest-700 border border-forest-300 px-4 py-1.5 rounded-lg hover:bg-forest-50 transition-colors">
-              Share invite link
+            <div className="text-xs text-gray-500 mt-0.5">More members = more collective impact</div>
+            <button
+              onClick={handleShare}
+              className="mt-3 text-xs font-medium text-forest-700 border border-forest-300 px-4 py-1.5 rounded-lg hover:bg-forest-50 transition-colors active:scale-95"
+            >
+              {copied ? 'Link Copied! ✓' : 'Share invite link'}
             </button>
           </div>
         </div>

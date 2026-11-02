@@ -1,6 +1,7 @@
 {
   "name": "carbon-footprint-platform",
   "version": "1.0.0",
+  "type": "module",
   "description": "EcoSelf — Carbon Footprint Awareness Platform with AI-powered insights and behavioral nudges",
   "private": true,
   "scripts": {

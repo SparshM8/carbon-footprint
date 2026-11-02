@@ -9,7 +9,7 @@ const URGENCY_COLORS = {
 }
 
 export default function NudgeSystem() {
-  const { footprint, completedActions, nudges, dismissNudge } = useStore()
+  const { footprint, completedActions, nudges, dismissedNudgeIds = [], dismissNudge } = useStore()
   const [dynamicNudges, setDynamicNudges] = useState([])
 
   useEffect(() => {
@@ -20,7 +20,8 @@ export default function NudgeSystem() {
   const allNudges = [
     ...dynamicNudges,
     ...nudges.filter(n => !n.dismissed),
-  ].slice(0, 2)
+  ].filter(n => !dismissedNudgeIds.includes(n.id))
+   .slice(0, 2)
 
   if (allNudges.length === 0) return null
 
@@ -32,7 +33,7 @@ export default function NudgeSystem() {
           <div
             key={nudge.id}
             role="alert"
-            className="flex gap-3 p-3 rounded-xl border-l-4"
+            className="flex gap-3 p-3 rounded-xl border-l-4 transition-all duration-300"
             style={{
               background: colors.bg,
               borderLeftColor: colors.border,
@@ -55,7 +56,7 @@ export default function NudgeSystem() {
             <button
               onClick={() => dismissNudge(nudge.id)}
               aria-label="Dismiss nudge"
-              className="text-gray-400 hover:text-gray-600 flex-shrink-0 self-start mt-0.5"
+              className="text-gray-400 hover:text-gray-600 active:scale-90 flex-shrink-0 self-start mt-0.5 p-1 rounded-md hover:bg-black/5 transition-all"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
                 <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />

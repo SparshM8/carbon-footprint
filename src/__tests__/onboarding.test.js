@@ -9,7 +9,7 @@ describe('Onboarding store flow', () => {
   beforeEach(() => {
     useStore.setState({
       onboardingComplete: false,
-      user: { name: '', xp: 0, streak: 0 },
+      user: { name: '', location: '', xp: 0, streak: 0 },
       footprint: { transport: 0, food: 0, energy: 0, shopping: 0, digital: 0 },
     })
   })
@@ -22,6 +22,11 @@ describe('Onboarding store flow', () => {
   it('saves user name from onboarding data', () => {
     useStore.getState().completeOnboarding({ name: 'Sparsh', avatar: '🌿' })
     expect(useStore.getState().user.name).toBe('Sparsh')
+  })
+
+  it('saves user location from onboarding data', () => {
+    useStore.getState().completeOnboarding({ name: 'Sparsh', location: 'Bengaluru' })
+    expect(useStore.getState().user.location).toBe('Bengaluru')
   })
 
   it('saves user avatar from onboarding data', () => {

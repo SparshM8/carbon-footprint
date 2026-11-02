@@ -32,7 +32,7 @@ Showing "9.3 kg CO₂" means nothing emotionally. Saying _"your drive today = ch
 | **Urgency** | Morning nudges tied to today's planned activities |
 | **Progress** | XP system, streaks, and a living visual ecosystem |
 | **Social proof** | Team leaderboard with collective weekly goals |
-| **AI guidance** | Personalized Claude-powered advisor with context |
+| **AI guidance** | Personalized Gemini-powered advisor with context |
 
 ### The Living World mechanic
 
@@ -52,7 +52,7 @@ src/
 │   ├── ActionCenter.jsx    # Daily challenges with XP
 │   ├── WorldView.jsx       # Living ecosystem + achievements
 │   ├── LeaderBoard.jsx     # Team rankings + collective goals
-│   └── AIAdvisor.jsx       # Claude-powered chat advisor
+│   └── AIAdvisor.jsx       # Gemini-powered chat advisor
 ├── components/
 │   ├── Navigation.jsx      # Bottom tab bar
 │   ├── NudgeSystem.jsx     # Context-aware push nudges
@@ -91,9 +91,9 @@ Each category uses simplified emission factors (kg CO₂ per unit):
 | Electricity (India grid) | 0.82 kg/kWh | CEA 2022 |
 | Streaming HD | 0.036 kg/hour | IEA 2022 |
 
-### AI Advisor (Claude integration)
+### AI Advisor (Gemini Flash integration)
 
-The AI Advisor calls Claude's API with a system prompt that:
+The AI Advisor calls Google Gemini Flash's API with a system prompt that:
 1. Knows the user's current footprint breakdown
 2. Knows their 7-day history and trends
 3. Knows their completed actions today
@@ -279,7 +279,7 @@ Test coverage includes:
 2. **Self-reported data** — the app trusts user input. A production version would integrate with fitness trackers, smart meters, and bank transaction APIs for automatic tracking.
 3. **India context** — grid emission factor and benchmark comparisons are calibrated for Indian users but the app works globally.
 4. **Team feature requires invite** — the social/leaderboard feature assumes users self-organize into teams. A production version would support workplace SSO for automatic team formation.
-5. **AI responses** — the Claude advisor gives general guidance. It is not a substitute for professional environmental consulting.
+5. **AI responses** — the Gemini advisor gives general guidance. It is not a substitute for professional environmental consulting.
 
 ---
 

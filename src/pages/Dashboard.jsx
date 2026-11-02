@@ -1,8 +1,9 @@
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 import PropTypes from 'prop-types'
 import useStore from '../store/useStore'
 import FootprintRing from '../components/FootprintRing'
 import NudgeSystem from '../components/NudgeSystem'
+import LogActivityModal from '../components/LogActivityModal'
 import { getTotalKg, getCO2Level, getEquivalent, GLOBAL_AVERAGE, INDIA_AVERAGE, SUSTAINABLE_TARGET, getLevelInfo } from '../utils/calculations'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 
@@ -35,13 +36,15 @@ CustomTooltip.propTypes = {
 
 export default function Dashboard() {
   const { user, footprint, weeklyData, setPage } = useStore()
+  const [showLogModal, setShowLogModal] = useState(false)
   const total = getTotalKg(footprint)
   const level = getCO2Level(total)
   const levelInfo = getLevelInfo(user.xp)
   const xpPct = Math.round(((user.xp - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100)
 
   const biggestCategory = useMemo(() => {
-    return Object.entries(footprint).sort((a, b) => b[1] - a[1])[0]
+    const entries = Object.entries(footprint)
+    return entries.length > 0 ? entries.sort((a, b) => b[1] - a[1])[0] : ['transport', 0]
   }, [footprint])
 
   const vsGlobal = (((GLOBAL_AVERAGE - total) / GLOBAL_AVERAGE) * 100).toFixed(0)
@@ -53,7 +56,7 @@ export default function Dashboard() {
       <div className="bg-gradient-to-r from-forest-900 via-forest-800 to-teal-900 px-4 pt-12 pb-4 shadow-md rounded-b-3xl md:rounded-3xl md:mx-4 md:mt-4">
         <div className="flex items-start justify-between mb-3">
           <div>
-            <p className="text-forest-400 text-xs font-medium">Good morning, {user.name} 👋</p>
+            <p className="text-forest-400 text-xs font-medium">Good morning, {user.name} 👋 ({user.location || 'India'})</p>
             <h1 className="text-white text-2xl font-semibold mt-0.5">
               {total} <span className="text-forest-400 text-base font-normal">kg CO₂ today</span>
             </h1>
@@ -67,11 +70,17 @@ export default function Dashboard() {
               <span className="text-forest-400 text-xs">🔥 {user.streak}-day streak</span>
             </div>
           </div>
-          <div className="text-right">
-            <div className="w-11 h-11 rounded-full bg-forest-700 border-2 border-forest-500 flex items-center justify-center text-xl">
+          <div className="text-right flex flex-col items-end gap-1">
+            <div className="w-11 h-11 rounded-full bg-forest-700 border-2 border-forest-500 flex items-center justify-center text-xl shadow-xs">
               🌱
             </div>
-            <div className="text-forest-400 text-[10px] mt-0.5">Lv. {levelInfo.level}</div>
+            <div className="text-forest-400 text-[10px]">Lv. {levelInfo.level}</div>
+            <button
+              onClick={() => setShowLogModal(true)}
+              className="text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-2 py-1 rounded-lg mt-1 shadow-xs transition-all active:scale-95"
+            >
+              + Log
+            </button>
           </div>
         </div>
 
@@ -176,17 +185,29 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Quick actions CTA */}
-          <div>
+          {/* Action CTAs */}
+          <div className="flex gap-2">
+            <button
+              onClick={() => setShowLogModal(true)}
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm flex items-center justify-center gap-1.5"
+            >
+              <span>📝</span> Log Activity
+            </button>
             <button
               onClick={() => setPage('actions')}
-              className="w-full bg-forest-600 hover:bg-forest-700 active:scale-95 text-white text-sm font-medium py-3 rounded-xl transition-all duration-200"
+              className="flex-1 bg-forest-600 hover:bg-forest-700 active:scale-95 text-white text-xs font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm flex items-center justify-center gap-1.5"
             >
-              View today&apos;s challenges →
+              Challenges →
             </button>
           </div>
         </div>
       </div>
+
+      {/* Activity Logging Modal */}
+      <LogActivityModal
+        isOpen={showLogModal}
+        onClose={() => setShowLogModal(false)}
+      />
     </div>
   )
 }
