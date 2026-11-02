@@ -1,131 +1,209 @@
 import React from 'react'
 import useStore from '../store/useStore'
 import WorldScene from '../components/WorldScene'
-import { getWorldHealth, getTotalKg } from '../utils/calculations'
+import { getWorldHealth, getTotalKg, SUSTAINABLE_TARGET } from '../utils/calculations'
+import { Leaf, Sun, Waves, Trees, Sparkles, Award } from 'lucide-react'
 
 export default function WorldView() {
   const { footprint, user, achievements } = useStore()
-  const health = getWorldHealth(footprint, user.streak)
+  const health = getWorldHealth(footprint, user?.streak || 0)
   const total = getTotalKg(footprint)
 
-  const healthLabel = health >= 75 ? { label: 'Thriving', color: '#16a34a', icon: '🌿' }
-    : health >= 50 ? { label: 'Recovering', color: '#d97706', icon: '🌱' }
-    : health >= 25 ? { label: 'Stressed', color: '#ea580c', icon: '🍂' }
-    : { label: 'Critical', color: '#dc2626', icon: '🥀' }
+  const healthLabel = health >= 75
+    ? { label: 'Thriving', color: '#005a3c', bg: '#d5f3df', icon: '🌿' }
+    : health >= 50
+    ? { label: 'Recovering', color: '#b45309', bg: '#fef3c7', icon: '🌱' }
+    : health >= 25
+    ? { label: 'Stressed', color: '#c2410c', bg: '#ffedd5', icon: '🍂' }
+    : { label: 'Critical', color: '#b91c1c', bg: '#fee2e2', icon: '🥀' }
 
   const worldEvents = [
     health > 60 && {
       id: 'trees-sprouted',
-      icon: '🌳', color: '#16a34a',
-      title: `${Math.max(1, Math.floor(user.streak / 2))} new trees sprouted`,
-      msg: 'Your consistent actions this week grew the forest. Keep going!'
+      icon: '🌳',
+      color: '#005a3c',
+      title: `${Math.max(2, Math.round((health / 100) * 11))} flourishing trees`,
+      msg: 'Your consistent carbon reduction allowed new trees to take root across the hills.'
     },
     health > 50 && {
       id: 'sky-clearing',
-      icon: '☀️', color: '#d97706',
-      title: 'Sky is clearing',
-      msg: `Transport choices reduced air haze. ${(100 - health)}% smog remaining.`
+      icon: '☀️',
+      color: '#d97706',
+      title: 'Clear sunny sky',
+      msg: 'Lower travel emissions removed air pollution and haze over the valley.'
+    },
+    total <= SUSTAINABLE_TARGET && {
+      id: 'sustainable-target',
+      icon: '🌊',
+      color: '#0284c7',
+      title: 'River in full flow',
+      msg: `Your daily impact (${total} kg) is below the 1.5°C target of 4.0 kg. The river is pure and clear.`
     },
     total > 8 && {
       id: 'river-dropping',
-      icon: '🌊', color: '#ef4444',
-      title: 'River level dropping',
-      msg: 'Shopping emissions are straining the ecosystem. Try one second-hand purchase.'
+      icon: '🌊',
+      color: '#ef4444',
+      title: 'River under strain',
+      msg: 'Higher consumption is straining the river basin. Try completing a challenge today.'
     },
     health <= 50 && {
       id: 'forest-thinning',
-      icon: '🍂', color: '#ea580c',
-      title: 'Forest thinning',
-      msg: 'High emissions are affecting tree growth. Complete 2 actions today to reverse this.'
+      icon: '🍂',
+      color: '#ea580c',
+      title: 'Forest needs support',
+      msg: 'Ecosystem health is recovering. Log 2 green actions today to plant more trees.'
     },
-    user.streak >= 7 && {
+    (user?.streak || 0) >= 7 && {
       id: 'streak-bonus',
-      icon: '🔥', color: '#f59e0b',
+      icon: '🔥',
+      color: '#f59e0b',
       title: `${user.streak}-day streak bonus!`,
-      msg: 'Your consistency adds +14% to ecosystem health. Incredible work!'
+      msg: `Your consistency earned a +${Math.min(user.streak * 2, 20)}% health boost for this world.`
     },
   ].filter(Boolean).slice(0, 3)
 
   return (
-    <div className="pb-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-forest-900 via-forest-800 to-teal-900 px-4 pt-12 pb-4 shadow-md rounded-b-3xl md:rounded-3xl md:mx-4 md:mt-4">
-        <h1 className="text-white text-xl font-semibold">Your Living World</h1>
-        <p className="text-forest-400 text-xs mt-1">Every choice shapes this ecosystem</p>
-      </div>
+    <div className="min-h-screen pb-12">
+      {/* Header matching Carbonly theme */}
+      <header className="flex flex-col gap-3 pt-4 md:pt-8 mb-6">
+        <p className="flex items-center gap-2 text-sm font-medium text-[#005a3c]">
+          <span className="size-2 rounded-full bg-[#005a3c]" /> Dynamic visual ecosystem
+        </p>
+        <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-[#062b20] md:text-5xl">
+          Your choices shape this <em className="font-serif text-[#005a3c]">living world.</em>
+        </h1>
+        <p className="max-w-xl text-sm leading-relaxed text-[#6f7f78] md:text-base">
+          An interactive, living reflection of your carbon habits. As your daily footprint drops and your streak grows, this ecosystem transforms with lush trees, clean skies, and flowing waters.
+        </p>
+      </header>
 
-      <div className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-6 md:px-4 md:mt-4">
-        <div className="md:col-span-2 flex flex-col gap-4">
-          {/* Main world container */}
-          <div className="mx-4 md:mx-0 bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-            <WorldScene footprint={footprint} streak={user.streak} />
-            <div className="flex items-center justify-between mt-4">
-              <div>
-                <div className="text-xs text-gray-500 mb-0.5">Ecosystem status</div>
-                <div className="flex items-center gap-1.5">
-                  <span className="text-lg">{healthLabel.icon}</span>
-                  <span className="text-base font-semibold" style={{ color: healthLabel.color }}>{healthLabel.label}</span>
+      <div className="grid gap-6 lg:grid-cols-[1.75fr_1fr]">
+        {/* Left Column: Interactive World Scene */}
+        <div className="flex flex-col gap-4">
+          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-5 shadow-sm">
+            {/* Top Scene Bar */}
+            <div className="flex items-center justify-between pb-3.5 mb-3 border-b border-[#f0ece1]">
+              <div className="flex items-center gap-2">
+                <span className="text-lg">🌍</span>
+                <span className="font-semibold text-sm text-[#062b20]">Interactive Valley View</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span
+                  className="rounded-full px-2.5 py-1 text-xs font-semibold flex items-center gap-1"
+                  style={{ background: healthLabel.bg, color: healthLabel.color }}
+                >
+                  <span>{healthLabel.icon}</span> {healthLabel.label}
+                </span>
+                <span className="text-xs text-[#718079] font-medium hidden sm:inline">
+                  {health}% Ecosystem Health
+                </span>
+              </div>
+            </div>
+
+            {/* The SVG Illustration */}
+            <WorldScene footprint={footprint} streak={user?.streak || 0} />
+
+            {/* Health Meter & Explanation */}
+            <div className="mt-5 pt-4 border-t border-[#f0ece1]">
+              <div className="flex items-end justify-between mb-2">
+                <div>
+                  <p className="text-xs text-[#718079]">Ecosystem Health Index</p>
+                  <p className="text-2xl font-bold text-[#062b20] mt-0.5">
+                    {health}<span className="text-sm font-normal text-[#89958f]"> / 100</span>
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs font-medium text-[#005a3c]">
+                    {health >= 75 ? 'Optimal Climate Balance' : `${100 - health}% from Full Bloom`}
+                  </span>
                 </div>
               </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold" style={{ color: healthLabel.color }}>{health}%</div>
-                <div className="text-xs text-gray-400">health score</div>
+
+              {/* Progress Bar */}
+              <div className="h-2.5 w-full rounded-full bg-[#ede8dc] overflow-hidden">
+                <div
+                  className="h-full rounded-full transition-all duration-1000 ease-out"
+                  style={{ width: `${health}%`, background: health >= 75 ? '#005a3c' : health >= 50 ? '#d97706' : '#dc2626' }}
+                />
+              </div>
+
+              {/* Landscape Metrics */}
+              <div className="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-[#f3efe4]">
+                <div className="flex items-center gap-2 text-xs text-[#52645a]">
+                  <Trees className="size-4 text-[#005a3c]" />
+                  <span>{Math.max(2, Math.round((health / 100) * 11))} Trees</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-[#52645a]">
+                  <Sun className="size-4 text-[#d97706]" />
+                  <span>{health > 50 ? 'Clean Sky' : 'Misty Haze'}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-[#52645a]">
+                  <Waves className="size-4 text-[#0284c7]" />
+                  <span>{health > 50 ? 'Flowing River' : 'Low River'}</span>
+                </div>
               </div>
             </div>
-            <div className="h-2 bg-gray-100 rounded-full overflow-hidden mt-3">
-              <div
-                className="h-full rounded-full transition-all duration-1000"
-                style={{ width: `${health}%`, background: healthLabel.color }}
-              />
-            </div>
-            <p className="text-xs text-gray-500 mt-2 leading-relaxed">
-              Reduce your footprint below 4 kg/day consistently to reach a <strong>thriving ecosystem</strong>.
-            </p>
           </div>
         </div>
 
-        <div className="md:col-span-1 flex flex-col gap-4 mt-4 md:mt-0">
-          {/* World events */}
-          {worldEvents.length > 0 && (
-            <div className="mx-4 md:mx-0">
-              <h2 className="text-sm font-semibold text-gray-800 mb-2">World events this week</h2>
-              <div className="space-y-2">
-                {worldEvents.map((event) => (
-                  <div
-                    key={event.id}
-                    className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-3 flex gap-3 items-start shadow-[0_4px_20px_rgb(0,0,0,0.03)] hover:-translate-y-1 transition-all"
-                    style={{ borderLeftWidth: 3, borderLeftColor: event.color }}
-                  >
-                    <span className="text-xl flex-shrink-0">{event.icon}</span>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900">{event.title}</div>
-                      <div className="text-xs text-gray-500 mt-0.5 leading-relaxed">{event.msg}</div>
-                    </div>
-                  </div>
-                ))}
+        {/* Right Column: World Events & Achievements */}
+        <div className="flex flex-col gap-6">
+          {/* World Events */}
+          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-5 shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-[#f0ece1]">
+              <div className="flex items-center gap-2">
+                <Sparkles className="size-4 text-[#005a3c]" />
+                <h2 className="text-sm font-semibold text-[#062b20]">Ecosystem Events</h2>
               </div>
+              <span className="text-[10px] text-[#718079]">Live feedback</span>
             </div>
-          )}
 
-          {/* Achievements */}
-          <div className="mx-4 md:mx-0">
-            <h2 className="text-sm font-semibold text-gray-800 mb-3">Achievements</h2>
-            <div className="grid grid-cols-3 gap-2">
-              {achievements.map(a => (
+            <div className="mt-3.5 space-y-2.5">
+              {worldEvents.map((event) => (
+                <div
+                  key={event.id}
+                  className="rounded-xl border border-[#ede8dc] bg-[#fbf9f3] p-3 transition hover:border-[#005a3c]/30"
+                  style={{ borderLeftWidth: 3, borderLeftColor: event.color }}
+                >
+                  <div className="flex items-center gap-2">
+                    <span className="text-base">{event.icon}</span>
+                    <span className="text-xs font-semibold text-[#082a20]">{event.title}</span>
+                  </div>
+                  <p className="text-xs text-[#63736a] mt-1 leading-relaxed pl-6">{event.msg}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Achievements Grid */}
+          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-5 shadow-sm">
+            <div className="flex items-center justify-between pb-3 border-b border-[#f0ece1]">
+              <div className="flex items-center gap-2">
+                <Award className="size-4 text-[#005a3c]" />
+                <h2 className="text-sm font-semibold text-[#062b20]">Eco Milestones</h2>
+              </div>
+              <span className="text-[10px] text-[#718079]">
+                {achievements.filter(a => a.earned).length} / {achievements.length} unlocked
+              </span>
+            </div>
+
+            <div className="mt-3.5 grid grid-cols-3 gap-2">
+              {achievements.map((a) => (
                 <div
                   key={a.id}
-                  className={`bg-white/70 backdrop-blur-md border border-white/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-xl p-3 text-center transition-all hover:-translate-y-1 ${
-                    a.earned ? '' : 'opacity-50 grayscale'
+                  className={`rounded-xl border p-2.5 text-center transition ${
+                    a.earned
+                      ? 'border-[#cfe9d5] bg-[#f2f9f3] shadow-xs'
+                      : 'border-[#ede9dc] bg-[#faf8f4] opacity-50 grayscale'
                   }`}
                 >
-                  <div className="text-2xl mb-1">{a.icon}</div>
-                  <div className="text-[11px] font-medium text-gray-800 leading-tight">{a.title}</div>
-                  <div className="text-[10px] text-gray-400 mt-0.5 leading-tight">{a.desc}</div>
-                  {a.earned && a.date && (
-                    <div className="text-[9px] text-amber-600 mt-1 font-medium">Earned ✓</div>
-                  )}
-                  {!a.earned && (
-                    <div className="text-[9px] text-gray-400 mt-1">Locked 🔒</div>
+                  <div className="text-xl mb-1">{a.icon}</div>
+                  <div className="text-[11px] font-semibold text-[#082a20] leading-tight truncate">{a.title}</div>
+                  <div className="text-[9px] text-[#718079] mt-0.5 line-clamp-2 leading-tight">{a.desc}</div>
+                  {a.earned ? (
+                    <div className="mt-1.5 text-[9px] font-semibold text-[#005a3c]">Unlocked ✓</div>
+                  ) : (
+                    <div className="mt-1.5 text-[9px] text-gray-400">Locked 🔒</div>
                   )}
                 </div>
               ))}
