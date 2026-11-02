@@ -27,7 +27,7 @@ export default function App() {
     <div className="min-h-screen bg-transparent">
       <Navigation />
       <div className="min-h-screen">
-        <main className="mx-auto max-w-7xl px-4 pb-10 md:px-8">
+        <main className="mx-auto max-w-7xl px-4 pb-20 md:pb-10 md:px-8">
           <div className="h-full">
             {pages[currentPage] || <Dashboard />}
           </div>
