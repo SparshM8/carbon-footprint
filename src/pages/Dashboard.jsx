@@ -1,213 +1,541 @@
 import React, { useMemo, useState } from 'react'
-import PropTypes from 'prop-types'
 import useStore from '../store/useStore'
-import FootprintRing from '../components/FootprintRing'
-import NudgeSystem from '../components/NudgeSystem'
 import LogActivityModal from '../components/LogActivityModal'
-import { getTotalKg, getCO2Level, getEquivalent, GLOBAL_AVERAGE, INDIA_AVERAGE, SUSTAINABLE_TARGET, getLevelInfo } from '../utils/calculations'
+import ShareImpactModal from '../components/ShareImpactModal'
+import CommuteComparatorModal from '../components/CommuteComparatorModal'
+import { getTotalKg, GLOBAL_AVERAGE } from '../utils/calculations'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import {
+  ChevronDown,
+  Leaf,
+  MoreHorizontal,
+  Plus,
+  SlidersHorizontal,
+  Trash2,
+  Share2,
+  Car,
+  UtensilsCrossed,
+  Zap,
+  ShoppingBag,
+  Laptop,
+  Edit2,
+  Camera,
+  Coins,
+  Navigation,
+  ArrowRight,
+  TrendingUp,
+} from 'lucide-react'
 
 const CATEGORY_META = {
-  transport: { label: 'Transport', icon: '🚗', color: '#378ADD' },
-  food: { label: 'Food', icon: '🍽️', color: '#EF9F27' },
-  energy: { label: 'Energy', icon: '⚡', color: '#7F77DD' },
-  shopping: { label: 'Shopping', icon: '🛍️', color: '#D4537E' },
-  digital: { label: 'Digital', icon: '💻', color: '#1D9E75' },
+  transport: { label: 'Travel', color: '#ffb25f', icon: Car },
+  food: { label: 'Food & diet', color: '#9ade4f', icon: UtensilsCrossed },
+  energy: { label: 'Home energy', color: '#005a3c', icon: Zap },
+  shopping: { label: 'Shopping', color: '#9ed1e5', icon: ShoppingBag },
+  digital: { label: 'Lifestyle', color: '#8bcce8', icon: Laptop },
 }
 
 function CustomTooltip({ active, payload, label }) {
-  if (active && payload && payload.length) {
-    const total = payload.reduce((a, b) => a + (b.value || 0), 0)
-    return (
-      <div className="bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm text-xs">
-        <div className="font-medium text-gray-700 mb-1">{label}</div>
-        <div className="font-semibold text-gray-900">{total.toFixed(1)} kg CO₂</div>
-      </div>
-    )
-  }
-  return null
+  if (!active || !payload?.length) return null
+  const total = payload.reduce((sum, item) => sum + (item.value || 0), 0)
+  return (
+    <div className="rounded-xl border border-[#e8e4d8] bg-[#fffdf8] px-3 py-2 text-xs shadow-lg">
+      <p className="font-medium text-[#738078]">{label}</p>
+      <p className="mt-1 font-semibold text-[#082a20]">{total.toFixed(1)} kg CO₂</p>
+    </div>
+  )
 }
 
-CustomTooltip.propTypes = {
-  active: PropTypes.bool,
-  payload: PropTypes.array,
-  label: PropTypes.string,
+function formatRelativeTime(isoString) {
+  if (!isoString) return 'Recently'
+  try {
+    const diffMs = Date.now() - new Date(isoString).getTime()
+    const diffMins = Math.floor(diffMs / (60 * 1000))
+    if (diffMins < 1) return 'Just now'
+    if (diffMins < 60) return `${diffMins}m ago`
+    const diffHours = Math.floor(diffMins / 60)
+    if (diffHours < 24) return `${diffHours}h ago`
+    const diffDays = Math.floor(diffHours / 24)
+    if (diffDays === 1) return 'Yesterday'
+    return `${diffDays}d ago`
+  } catch {
+    return 'Recently'
+  }
 }
 
 export default function Dashboard() {
-  const { user, footprint, weeklyData, setPage } = useStore()
+  const {
+    user,
+    footprint,
+    weeklyData,
+    setPage,
+    activityLogs = [],
+    deleteActivityLog,
+    monthlyBudget = 150,
+    setMonthlyBudget,
+    moneySaved = 2480,
+    monthlySavingsGoal = 5000,
+  } = useStore()
+
   const [showLogModal, setShowLogModal] = useState(false)
+  const [showShareModal, setShowShareModal] = useState(false)
+  const [showCommuteModal, setShowCommuteModal] = useState(false)
+  const [showBudgetModal, setShowBudgetModal] = useState(false)
+  const [customBudgetInput, setCustomBudgetInput] = useState(monthlyBudget)
+  const [selectedFilter, setSelectedFilter] = useState('all')
+
   const total = getTotalKg(footprint)
-  const level = getCO2Level(total)
-  const levelInfo = getLevelInfo(user.xp)
-  const xpPct = Math.round(((user.xp - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100)
+  const biggest = useMemo(
+    () => Object.entries(footprint).sort((a, b) => b[1] - a[1])[0] || ['energy', 0],
+    [footprint]
+  )
+  const vsGlobal = Math.max(0, Math.round(((GLOBAL_AVERAGE - total) / GLOBAL_AVERAGE) * 100))
+  const score = Math.max(0, Math.min(100, Math.round(100 - total * 4)))
 
-  const biggestCategory = useMemo(() => {
-    const entries = Object.entries(footprint)
-    return entries.length > 0 ? entries.sort((a, b) => b[1] - a[1])[0] : ['transport', 0]
-  }, [footprint])
+  // Monthly Budget Forecasting
+  const projectedMonthlyTotal = Math.round(total * 30)
+  const budgetPctUsed = Math.min(100, Math.round((projectedMonthlyTotal / (monthlyBudget || 150)) * 100))
+  const isUnderBudget = projectedMonthlyTotal <= monthlyBudget
 
-  const vsGlobal = (((GLOBAL_AVERAGE - total) / GLOBAL_AVERAGE) * 100).toFixed(0)
-  const vsTarget = total - SUSTAINABLE_TARGET
+  // Money savings progress
+  const savingsPct = Math.min(100, Math.round((moneySaved / (monthlySavingsGoal || 5000)) * 100))
+
+  const chartData = weeklyData?.length
+    ? weeklyData
+    : [
+        { day: 'Mon', transport: 2, food: 2, energy: 2 },
+        { day: 'Tue', transport: 2, food: 1, energy: 2 },
+        { day: 'Wed', transport: 1, food: 2, energy: 2 },
+        { day: 'Thu', transport: 2, food: 2, energy: 1 },
+        { day: 'Fri', transport: 2, food: 1, energy: 2 },
+        { day: 'Sat', transport: 1, food: 2, energy: 1 },
+        { day: 'Sun', transport: 1, food: 1, energy: 1 },
+      ]
+
+  const filteredLogs = useMemo(() => {
+    if (selectedFilter === 'all') return activityLogs
+    return activityLogs.filter((log) => log.category === selectedFilter)
+  }, [activityLogs, selectedFilter])
+
+  const handleSaveBudget = (e) => {
+    e.preventDefault()
+    const val = Math.max(20, Math.min(1000, Number(customBudgetInput) || 150))
+    setMonthlyBudget(val)
+    setShowBudgetModal(false)
+  }
 
   return (
-    <div className="pb-4">
-      {/* Header */}
-      <div className="bg-gradient-to-r from-forest-900 via-forest-800 to-teal-900 px-4 pt-12 pb-4 shadow-md rounded-b-3xl md:rounded-3xl md:mx-4 md:mt-4">
-        <div className="flex items-start justify-between mb-3">
+    <div className="min-h-screen pb-12">
+      <div className="flex flex-col gap-8">
+        {/* Header */}
+        <header className="flex flex-col gap-7 pt-4 md:flex-row md:items-end md:justify-between md:pt-8">
           <div>
-            <p className="text-forest-400 text-xs font-medium">Good morning, {user.name} 👋 ({user.location || 'India'})</p>
-            <h1 className="text-white text-2xl font-semibold mt-0.5">
-              {total} <span className="text-forest-400 text-base font-normal">kg CO₂ today</span>
+            <p className="mb-3 flex items-center gap-2 text-sm font-medium text-[#005a3c]">
+              <span className="size-2 rounded-full bg-[#005a3c]" /> Personal impact & savings dashboard
+            </p>
+            <h1 className="max-w-3xl text-4xl leading-[1.05] tracking-[-0.055em] text-[#062b20] md:text-6xl">
+              Make your footprint <em className="font-serif text-[#005a3c]">lighter.</em>
             </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span
-                className="text-xs px-2 py-0.5 rounded-full font-medium"
-                style={{ background: level.bg, color: level.color }}
-              >
-                {level.label}
-              </span>
-              <span className="text-forest-400 text-xs">🔥 {user.streak}-day streak</span>
-            </div>
+            <p className="mt-5 max-w-xl text-base leading-7 text-[#6f7f78] md:text-lg">
+              Track carbon impact, save real pocket money on bills, and adopt high-yield eco habits.
+            </p>
           </div>
-          <div className="text-right flex flex-col items-end gap-1">
-            <div className="w-11 h-11 rounded-full bg-forest-700 border-2 border-forest-500 flex items-center justify-center text-xl shadow-xs">
-              🌱
-            </div>
-            <div className="text-forest-400 text-[10px]">Lv. {levelInfo.level}</div>
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => setShowCommuteModal(true)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#ded8c9] bg-[#fffdf8] px-4 py-3 text-xs font-semibold text-[#062b20] shadow-xs transition hover:bg-[#f3efe4] active:scale-95"
+            >
+              <Navigation className="size-4 text-[#005a3c]" /> Commute Planner
+            </button>
+            <button
+              onClick={() => setShowShareModal(true)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#ded8c9] bg-[#fffdf8] px-4 py-3 text-xs font-semibold text-[#005a3c] shadow-xs transition hover:bg-[#f3efe4] active:scale-95"
+            >
+              <Share2 className="size-4" /> Share Impact
+            </button>
             <button
               onClick={() => setShowLogModal(true)}
-              className="text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-2 py-1 rounded-lg mt-1 shadow-xs transition-all active:scale-95"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#005a3c] px-5 py-3 text-xs font-semibold text-white shadow-lg shadow-[#005a3c]/20 transition hover:-translate-y-0.5 hover:bg-[#00452f] active:scale-95"
             >
-              + Log
+              <Plus className="size-4" /> 10s AI Log
             </button>
           </div>
-        </div>
+        </header>
 
-        {/* XP bar */}
-        <div className="mt-2">
-          <div className="flex justify-between text-[10px] text-forest-400 mb-1">
-            <span>{user.xp} XP — {levelInfo.title}</span>
-            <span>Lv.{levelInfo.level + 1} at {levelInfo.max} XP</span>
-          </div>
-          <div className="h-1.5 bg-forest-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-forest-400 rounded-full transition-all duration-700"
-              style={{ width: `${xpPct}%` }}
-            />
-          </div>
-        </div>
-      </div>
+        {/* 4 Top Metric Cards (Including Pocket Money Saved) */}
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {/* Card 1: Daily Footprint */}
+          <StatCard
+            label="Daily Footprint"
+            value={`${total} kg`}
+            detail="CO₂ equivalent today"
+            badge={`↓ ${vsGlobal}% vs global`}
+            positive
+          />
 
-      {/* Nudges */}
-      <NudgeSystem />
-
-      <div className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:px-4 md:mt-4">
-        {/* Donut ring */}
-        <div className="mx-4 mt-4 md:mx-0 md:mt-0 bg-white/70 backdrop-blur-md rounded-xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.04)] overflow-hidden hover:-translate-y-1 hover:shadow-lg hover:shadow-green-900/10 transition-all duration-300 flex flex-col">
-          <div className="px-4 pt-3 pb-1 flex items-center justify-between flex-shrink-0">
-            <h2 className="text-sm font-semibold text-gray-800">Today&apos;s breakdown</h2>
-            <span className="text-xs text-gray-400">{getEquivalent(total)}</span>
-          </div>
-          <div className="flex-1 flex items-center justify-center pb-2">
-            <FootprintRing footprint={footprint} />
-          </div>
-        </div>
-
-        {/* Center column */}
-        <div className="flex flex-col gap-3 mx-4 mt-3 md:mx-0 md:mt-0">
-          {/* Biggest lever */}
-          <div className="bg-amber-50/80 backdrop-blur-md border border-white/50 rounded-xl p-3 flex gap-3 items-start h-full hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300">
-            <span className="text-2xl">{CATEGORY_META[biggestCategory[0]]?.icon}</span>
-            <div>
-              <p className="text-sm font-medium text-amber-900">
-                {CATEGORY_META[biggestCategory[0]]?.label} is your biggest lever
+          {/* Card 2: Pocket Money Saved (Paisa Bachao) */}
+          <div className="relative rounded-2xl border border-[#cfe9d5] bg-gradient-to-br from-[#f2f9f3] to-[#e6f4e9] p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-[#005a3c] flex items-center gap-1.5">
+                <Coins className="size-4 text-[#4d7c0f]" /> Pocket Money Saved
               </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                {biggestCategory[1].toFixed(1)} kg CO₂ — reducing this has the highest impact on your total.
-              </p>
+              <span className="rounded-full bg-[#005a3c]/10 px-2 py-0.5 text-[10px] font-bold text-[#005a3c]">
+                Paisa Bachao
+              </span>
+            </div>
+            <div className="mt-4 flex items-baseline gap-1">
+              <span className="text-3xl font-extrabold tracking-tight text-[#062b20]">₹{moneySaved}</span>
+              <span className="text-xs text-[#526d5f]">saved</span>
+            </div>
+            <div className="mt-3 h-2 w-full rounded-full bg-[#daeedf] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#005a3c] transition-all duration-700"
+                style={{ width: `${savingsPct}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-[#526d5f] flex items-center justify-between">
+              <span>Goal: ₹{monthlySavingsGoal}/mo</span>
+              <strong className="text-[#005a3c] font-semibold">{savingsPct}% reached</strong>
+            </p>
+          </div>
+
+          {/* Card 3: Interactive Monthly Budget Card with Forecast */}
+          <div className="relative rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm text-[#718079]">Monthly Carbon Budget</p>
               <button
-                onClick={() => setPage('actions')}
-                className="mt-2 text-xs font-medium text-amber-800 underline underline-offset-2"
+                onClick={() => {
+                  setCustomBudgetInput(monthlyBudget)
+                  setShowBudgetModal(true)
+                }}
+                className="text-[11px] font-semibold text-[#005a3c] hover:underline flex items-center gap-1"
+                title="Edit target budget"
               >
-                See actions →
+                <Edit2 className="size-3" /> Edit
               </button>
             </div>
+            <div className="mt-4 flex items-baseline justify-between gap-2">
+              <p className="text-3xl font-bold tracking-tight text-[#062b20]">
+                {monthlyBudget} <span className="text-sm font-normal text-[#89958f]">kg</span>
+              </p>
+              <span
+                className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                  isUnderBudget ? 'bg-[#eafbba] text-[#4d7c0f]' : 'bg-[#fee2e2] text-[#dc2626]'
+                }`}
+              >
+                {isUnderBudget ? '🟢 On Track' : '⚠️ Over Target'}
+              </span>
+            </div>
+            <div className="mt-3 h-2 w-full rounded-full bg-[#ede8dc] overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${
+                  isUnderBudget ? 'bg-[#005a3c]' : 'bg-[#dc2626]'
+                }`}
+                style={{ width: `${budgetPctUsed}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-[#89958f]">
+              Pacing ~<strong className="text-[#062b20]">{projectedMonthlyTotal} kg</strong> this month
+            </p>
           </div>
 
-          {/* Benchmarks */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-white/70 backdrop-blur-md border border-white/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-xl p-3 text-center">
-              <div className="text-xs text-gray-500 mb-1">Global avg</div>
-              <div className="text-base font-semibold text-gray-800">{GLOBAL_AVERAGE}</div>
-              <div className="text-[10px] text-green-600 mt-0.5">You save {vsGlobal}%</div>
+          {/* Card 4: Climate Score */}
+          <div className="relative overflow-hidden rounded-2xl bg-[#005a3c] p-6 text-white shadow-lg shadow-[#005a3c]/15">
+            <Leaf className="absolute -right-2 -top-2 size-24 rotate-12 text-white/10" />
+            <p className="text-sm text-emerald-100">Climate Score</p>
+            <div className="mt-5 flex items-end gap-2">
+              <span className="text-4xl font-bold tracking-tight">{score}</span>
+              <span className="mb-1 text-sm text-emerald-200">/ 100</span>
             </div>
-            <div className="bg-white/70 backdrop-blur-md border border-white/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-xl p-3 text-center">
-              <div className="text-xs text-gray-500 mb-1">India avg</div>
-              <div className="text-base font-semibold text-gray-800">{INDIA_AVERAGE}</div>
-              <div className={`text-[10px] mt-0.5 ${total < INDIA_AVERAGE ? 'text-green-600' : 'text-red-500'}`}>
-                {total < INDIA_AVERAGE ? `↓ ${(INDIA_AVERAGE - total).toFixed(1)} below` : `↑ ${(total - INDIA_AVERAGE).toFixed(1)} above`}
-              </div>
+            <div className="mt-4 h-2 rounded-full bg-white/20">
+              <div className="h-full rounded-full bg-[#c9f34a]" style={{ width: `${score}%` }} />
             </div>
-            <div className="bg-white/70 backdrop-blur-md border border-white/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-xl p-3 text-center">
-              <div className="text-xs text-gray-500 mb-1">1.5°C target</div>
-              <div className="text-base font-semibold text-gray-800">{SUSTAINABLE_TARGET}</div>
-              <div className={`text-[10px] mt-0.5 ${vsTarget <= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                {vsTarget <= 0 ? '✓ On track!' : `${vsTarget.toFixed(1)} to go`}
+            <p className="mt-2.5 text-xs text-emerald-100">
+              {score >= 70 ? 'Top 15% eco-conscious benchmark' : 'Completing 1 challenge boosts score'}
+            </p>
+          </div>
+        </section>
+
+        {/* Smart Commute Comparator Callout Banner */}
+        <section className="rounded-3xl border border-[#d8ecd8] bg-gradient-to-r from-[#f0f9f3] via-[#f7fcf8] to-[#eaf5ed] p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#005a3c] text-white shadow-sm">
+              <Navigation className="size-6" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-[#062b20]">Smart Commute & Fare Comparator</h3>
+                <span className="rounded-full bg-[#005a3c] px-2.5 py-0.5 text-[10px] font-bold text-white">
+                  Decision Helper
+                </span>
               </div>
+              <p className="mt-1 text-xs text-[#526d5f] leading-relaxed max-w-xl">
+                Planning your trip today? Compare Cab vs Metro vs Bus vs Two-Wheeler fares, travel time, and emissions side-by-side to save ₹300+ per commute.
+              </p>
             </div>
           </div>
-        </div>
+          <button
+            onClick={() => setShowCommuteModal(true)}
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#005a3c] px-5 py-3 text-xs font-semibold text-white hover:bg-[#00452f] transition active:scale-95 shadow-sm whitespace-nowrap self-stretch md:self-auto justify-center"
+          >
+            <span>Compare Commute Options</span>
+            <ArrowRight className="size-4" />
+          </button>
+        </section>
 
-        {/* Right column */}
-        <div className="flex flex-col gap-3 mx-4 mt-3 md:mx-0 md:mt-0 lg:col-span-1 md:col-span-2">
-          {/* Weekly chart */}
-          <div className="bg-white/70 backdrop-blur-md border border-white/50 rounded-xl p-4 shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex-1 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] transition-all duration-300">
-            <h2 className="text-sm font-semibold text-gray-800 mb-3">This week</h2>
-            <ResponsiveContainer width="100%" height={120}>
-              <BarChart data={weeklyData} barSize={24} barGap={4}>
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                <Bar dataKey="transport" stackId="a" fill="#378ADD" />
-                <Bar dataKey="food" stackId="a" fill="#EF9F27" />
-                <Bar dataKey="energy" stackId="a" fill="#7F77DD" />
-                <Bar dataKey="shopping" stackId="a" fill="#D4537E" />
-                <Bar dataKey="digital" stackId="a" fill="#1D9E75" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-              {Object.entries(CATEGORY_META).map(([k, v]) => (
-                <div key={k} className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-sm inline-block" style={{ background: v.color }} />
-                  <span className="text-[10px] text-gray-500">{v.label}</span>
+        {/* Charts & Breakdown */}
+        <section className="grid gap-4 lg:grid-cols-[1.65fr_1fr]">
+          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-[#718079]">Weekly Emissions Profile</p>
+                <div className="mt-2 flex items-center gap-3">
+                  <h2 className="text-3xl font-semibold tracking-tight text-[#062b20]">
+                    {(total * 7).toFixed(1)} kg
+                  </h2>
+                  <span className="text-sm font-medium text-[#005a3c]">↘ 12.4% vs last week</span>
                 </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <SlidersHorizontal className="hidden size-4 text-[#738078] sm:block" />
+                <button className="flex items-center gap-2 rounded-full border border-[#e4dfd2] px-3 py-1.5 text-xs font-semibold text-[#243a32]">
+                  7 Days <ChevronDown className="size-3.5" />
+                </button>
+              </div>
+            </div>
+            <div className="mt-6 h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={chartData} barSize={28}>
+                  <XAxis dataKey="day" tick={{ fontSize: 12, fill: '#89958f' }} axisLine={false} tickLine={false} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f0e8' }} />
+                  <Bar dataKey="transport" stackId="a" fill="#ffb25f" radius={[0, 0, 0, 0]} />
+                  <Bar dataKey="food" stackId="a" fill="#9ade4f" />
+                  <Bar dataKey="energy" stackId="a" fill="#005a3c" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm text-[#718079]">Where it comes from</p>
+                <h2 className="mt-2 text-2xl font-semibold tracking-tight text-[#062b20]">By category</h2>
+              </div>
+              <MoreHorizontal className="size-5 text-[#738078]" />
+            </div>
+            <div className="mt-6 flex items-center gap-6">
+              <Donut footprint={footprint} />
+              <div className="flex flex-1 flex-col gap-3">
+                {Object.entries(CATEGORY_META).slice(0, 4).map(([key, meta]) => {
+                  const val = footprint[key] || 0
+                  const pct = total > 0 ? Math.round((val / total) * 100) : 0
+                  return (
+                    <div key={key} className="flex items-center gap-3 text-sm">
+                      <span className="size-3 rounded-full" style={{ background: meta.color }} />
+                      <span className="flex-1 text-[#718079]">{meta.label}</span>
+                      <span className="font-semibold text-[#1b3028]">{pct}%</span>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+            <div className="mt-6 flex gap-3 rounded-2xl bg-[#f4f0e3] p-4 text-xs leading-5 text-[#5e6d64]">
+              <span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#c9f34a] text-[#005a3c]">
+                <Leaf className="size-4" />
+              </span>
+              <p>
+                <strong className="text-[#18362b]">Top win:</strong> Replacing 15 km of driving with metro commutes
+                saves ~1.8 kg CO₂ and ~₹240 daily.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Dynamic Activity Feed Section */}
+        <section>
+          <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm text-[#718079]">Live Carbon & Money Savings Feed</p>
+              <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[#062b20]">Your latest logs</h2>
+            </div>
+            <div className="flex flex-wrap items-center gap-1.5">
+              {['all', 'transport', 'food', 'energy', 'shopping'].map((cat) => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedFilter(cat)}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold capitalize transition ${
+                    selectedFilter === cat
+                      ? 'bg-[#005a3c] text-white shadow-xs'
+                      : 'border border-[#ede9dc] bg-[#fffdf8] text-[#718079] hover:text-[#062b20]'
+                  }`}
+                >
+                  {cat}
+                </button>
               ))}
             </div>
           </div>
 
-          {/* Action CTAs */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowLogModal(true)}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm flex items-center justify-center gap-1.5"
-            >
-              <span>📝</span> Log Activity
-            </button>
-            <button
-              onClick={() => setPage('actions')}
-              className="flex-1 bg-forest-600 hover:bg-forest-700 active:scale-95 text-white text-xs font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm flex items-center justify-center gap-1.5"
-            >
-              Challenges →
-            </button>
+          <div className="overflow-hidden rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] shadow-sm">
+            {filteredLogs.length === 0 ? (
+              <div className="p-8 text-center">
+                <p className="text-sm text-[#718079]">No activities found in this filter.</p>
+                <button
+                  onClick={() => setShowLogModal(true)}
+                  className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-[#005a3c] px-4 py-2 text-xs font-semibold text-white hover:bg-[#00452f] transition"
+                >
+                  <Plus className="size-3.5" /> Log new activity
+                </button>
+              </div>
+            ) : (
+              filteredLogs.slice(0, 10).map((log) => {
+                const meta = CATEGORY_META[log.category] || CATEGORY_META.transport
+                const Icon = meta.icon || Leaf
+                const isReduction = (log.impact || 0) < 0
+                return (
+                  <div
+                    key={log.id}
+                    className="group flex items-center gap-4 border-b border-[#ebe7dc] px-6 py-4 transition hover:bg-[#fcfaf5] last:border-0"
+                  >
+                    <span
+                      className="grid size-10 shrink-0 place-items-center rounded-full"
+                      style={{ background: `${meta.color}20`, color: meta.color }}
+                    >
+                      <Icon className="size-5" />
+                    </span>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <p className="font-semibold text-sm text-[#132e25] truncate">{log.title}</p>
+                        {log.receiptScan && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#d5f3df] px-2 py-0.5 text-[10px] font-semibold text-[#005a3c]">
+                            <Camera className="size-3" /> Scanned
+                          </span>
+                        )}
+                        {log.moneySaved > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#eafbba] px-2 py-0.5 text-[10px] font-bold text-[#4d7c0f]">
+                            💰 Saved ₹{log.moneySaved}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-[#89958f] mt-0.5">
+                        {meta.label} · {log.unit || 'action'} · {formatRelativeTime(log.timestamp)}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={`text-sm font-bold ${
+                          isReduction ? 'text-[#005a3c]' : 'text-[#b45309]'
+                        }`}
+                      >
+                        {isReduction ? `${log.impact} kg` : `+${log.impact} kg`}
+                      </span>
+
+                      <button
+                        onClick={() => deleteActivityLog(log.id)}
+                        className="opacity-0 group-hover:opacity-100 p-1.5 text-[#89958f] hover:text-red-600 rounded-lg transition"
+                        title="Delete log"
+                        aria-label="Delete log"
+                      >
+                        <Trash2 className="size-4" />
+                      </button>
+                    </div>
+                  </div>
+                )
+              })
+            )}
           </div>
-        </div>
+        </section>
       </div>
 
-      {/* Activity Logging Modal */}
-      <LogActivityModal
-        isOpen={showLogModal}
-        onClose={() => setShowLogModal(false)}
-      />
+      {/* Edit Monthly Budget Modal */}
+      {showBudgetModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-xs">
+          <div className="w-full max-w-sm rounded-3xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-xl animate-in fade-in zoom-in-95">
+            <h3 className="text-base font-semibold text-[#062b20]">Set Monthly Carbon Budget</h3>
+            <p className="mt-1 text-xs text-[#718079]">
+              Set a monthly limit in kg CO₂ to hold yourself accountable.
+            </p>
+            <form onSubmit={handleSaveBudget} className="mt-4 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-[#718079] mb-1">Target Budget (kg CO₂e)</label>
+                <input
+                  type="number"
+                  min="20"
+                  max="1000"
+                  value={customBudgetInput}
+                  onChange={(e) => setCustomBudgetInput(e.target.value)}
+                  className="w-full rounded-xl border border-[#ded8c9] px-3 py-2 text-sm bg-white text-[#062b20] focus:ring-2 focus:ring-[#005a3c] focus:outline-none"
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowBudgetModal(false)}
+                  className="flex-1 rounded-xl border border-[#ded8c9] py-2 text-xs font-semibold text-[#718079] hover:bg-[#f3efe4]"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 rounded-xl bg-[#005a3c] py-2 text-xs font-semibold text-white hover:bg-[#00452f]"
+                >
+                  Save Budget
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modals */}
+      <LogActivityModal isOpen={showLogModal} onClose={() => setShowLogModal(false)} />
+      <ShareImpactModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
+      <CommuteComparatorModal isOpen={showCommuteModal} onClose={() => setShowCommuteModal(false)} />
+    </div>
+  )
+}
+
+function StatCard({ label, value, detail, badge, positive }) {
+  return (
+    <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm">
+      <p className="text-sm text-[#718079]">{label}</p>
+      <div className="mt-4 flex items-center justify-between gap-2">
+        <p className="truncate text-3xl font-bold tracking-tight text-[#062b20]">{value}</p>
+        <span
+          className={`rounded-full px-3 py-1 text-xs font-semibold ${
+            positive ? 'bg-[#eafbba] text-[#567b12]' : 'bg-[#f0ead5] text-[#6f6e4f]'
+          }`}
+        >
+          {badge}
+        </span>
+      </div>
+      <p className="mt-2 text-xs text-[#89958f]">{detail}</p>
+    </div>
+  )
+}
+
+function Donut({ footprint }) {
+  const total = Object.values(footprint).reduce((a, b) => a + b, 0) || 1
+  let current = 0
+  const colors = ['#005a3c', '#9ade4f', '#ffb25f', '#9ed1e5', '#c8d9d2']
+  const stops = Object.values(footprint)
+    .map((value, index) => {
+      const start = current
+      current += (value / total) * 360
+      return `${colors[index]} ${start}deg ${current}deg`
+    })
+    .join(', ')
+
+  return (
+    <div
+      className="relative size-36 shrink-0 rounded-full"
+      style={{ background: `conic-gradient(${stops})` }}
+    >
+      <div className="absolute inset-5 grid place-items-center rounded-full bg-[#fffdf8] text-center">
+        <strong className="text-xl font-bold text-[#082a20]">{total.toFixed(1)}kg</strong>
+        <span className="text-[10px] text-[#89958f]">daily CO₂e</span>
+      </div>
     </div>
   )
 }

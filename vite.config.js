@@ -2,7 +2,7 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
-  base: '/carbon-footprint/',
+  base: '/',
   plugins: [react()],
   test: {
     globals: true,
@@ -10,7 +10,8 @@ export default defineConfig({
   },
   server: {
     port: 3000,
-    open: true
+    open: true,
+    allowedHosts: true
   },
   build: {
     chunkSizeWarningLimit: 600,

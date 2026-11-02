@@ -111,7 +111,8 @@ export const generateOfflineGeminiResponse = (query = '', footprint = {}, comple
  */
 export const callEcoAI = async (messages, footprint = {}, completedActions = [], streak = 0, options = {}) => {
   const apiKey = import.meta.env.VITE_GEMINI_API_KEY
-  const model = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash'
+  const rawModel = import.meta.env.VITE_GEMINI_MODEL || 'gemini-2.5-flash'
+  const model = rawModel.includes('3.8') ? 'gemini-2.5-flash' : rawModel
 
   if (!apiKey) {
     if (options.allowFallback) {
@@ -149,6 +150,10 @@ export const callEcoAI = async (messages, footprint = {}, completedActions = [],
   })
 
   if (!response.ok) {
+    if (options.allowFallback) {
+      const latestMsg = messages[messages.length - 1]?.content || ''
+      return generateOfflineGeminiResponse(latestMsg, footprint, completedActions, streak)
+    }
     const err = await response.json().catch(() => ({}))
     throw new Error(err.error?.message || `Gemini API error (${response.status})`)
   }

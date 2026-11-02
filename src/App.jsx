@@ -24,11 +24,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen md:flex bg-transparent">
+    <div className="min-h-screen bg-transparent">
       <Navigation />
-      <div className="flex-1 min-h-screen flex flex-col relative md:ml-64">
-        <main className="flex-1 pb-20 md:pb-0 md:p-8 overflow-y-auto">
-          <div className="max-w-6xl mx-auto h-full px-4 md:px-0">
+      <div className="min-h-screen">
+        <main className="mx-auto max-w-7xl px-4 pb-20 md:pb-10 md:px-8">
+          <div className="h-full">
             {pages[currentPage] || <Dashboard />}
           </div>
         </main>
