@@ -24,7 +24,11 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-transparent">\n      <Navigation />\n      <div className="min-h-screen">\n        <main className="mx-auto max-w-7xl px-4 pb-10 md:px-8">\n          <div className="h-full">
+    <div className="min-h-screen bg-transparent">
+      <Navigation />
+      <div className="min-h-screen">
+        <main className="mx-auto max-w-7xl px-4 pb-10 md:px-8">
+          <div className="h-full">
             {pages[currentPage] || <Dashboard />}
           </div>
         </main>
