@@ -2,7 +2,8 @@ import React, { useMemo, useState } from 'react'
 import useStore from '../store/useStore'
 import LogActivityModal from '../components/LogActivityModal'
 import ShareImpactModal from '../components/ShareImpactModal'
-import { getTotalKg, GLOBAL_AVERAGE, SUSTAINABLE_TARGET } from '../utils/calculations'
+import CommuteComparatorModal from '../components/CommuteComparatorModal'
+import { getTotalKg, GLOBAL_AVERAGE } from '../utils/calculations'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import {
   ChevronDown,
@@ -17,10 +18,12 @@ import {
   Zap,
   ShoppingBag,
   Laptop,
-  Target,
   Edit2,
   Camera,
-  CheckCircle2,
+  Coins,
+  Navigation,
+  ArrowRight,
+  TrendingUp,
 } from 'lucide-react'
 
 const CATEGORY_META = {
@@ -69,10 +72,13 @@ export default function Dashboard() {
     deleteActivityLog,
     monthlyBudget = 150,
     setMonthlyBudget,
+    moneySaved = 2480,
+    monthlySavingsGoal = 5000,
   } = useStore()
 
   const [showLogModal, setShowLogModal] = useState(false)
   const [showShareModal, setShowShareModal] = useState(false)
+  const [showCommuteModal, setShowCommuteModal] = useState(false)
   const [showBudgetModal, setShowBudgetModal] = useState(false)
   const [customBudgetInput, setCustomBudgetInput] = useState(monthlyBudget)
   const [selectedFilter, setSelectedFilter] = useState('all')
@@ -89,6 +95,9 @@ export default function Dashboard() {
   const projectedMonthlyTotal = Math.round(total * 30)
   const budgetPctUsed = Math.min(100, Math.round((projectedMonthlyTotal / (monthlyBudget || 150)) * 100))
   const isUnderBudget = projectedMonthlyTotal <= monthlyBudget
+
+  // Money savings progress
+  const savingsPct = Math.min(100, Math.round((moneySaved / (monthlySavingsGoal || 5000)) * 100))
 
   const chartData = weeklyData?.length
     ? weeklyData
@@ -121,42 +130,75 @@ export default function Dashboard() {
         <header className="flex flex-col gap-7 pt-4 md:flex-row md:items-end md:justify-between md:pt-8">
           <div>
             <p className="mb-3 flex items-center gap-2 text-sm font-medium text-[#005a3c]">
-              <span className="size-2 rounded-full bg-[#005a3c]" /> Personal impact dashboard
+              <span className="size-2 rounded-full bg-[#005a3c]" /> Personal impact & savings dashboard
             </p>
             <h1 className="max-w-3xl text-4xl leading-[1.05] tracking-[-0.055em] text-[#062b20] md:text-6xl">
               Make your footprint <em className="font-serif text-[#005a3c]">lighter.</em>
             </h1>
             <p className="mt-5 max-w-xl text-base leading-7 text-[#6f7f78] md:text-lg">
-              A clearer view of the choices that shape your carbon impact — and the small changes that add up.
+              Track carbon impact, save real pocket money on bills, and adopt high-yield eco habits.
             </p>
           </div>
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2.5">
+            <button
+              onClick={() => setShowCommuteModal(true)}
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#ded8c9] bg-[#fffdf8] px-4 py-3 text-xs font-semibold text-[#062b20] shadow-xs transition hover:bg-[#f3efe4] active:scale-95"
+            >
+              <Navigation className="size-4 text-[#005a3c]" /> Commute Planner
+            </button>
             <button
               onClick={() => setShowShareModal(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-full border border-[#ded8c9] bg-[#fffdf8] px-5 py-3 font-semibold text-[#005a3c] shadow-xs transition hover:bg-[#f3efe4] active:scale-95"
+              className="inline-flex items-center justify-center gap-1.5 rounded-full border border-[#ded8c9] bg-[#fffdf8] px-4 py-3 text-xs font-semibold text-[#005a3c] shadow-xs transition hover:bg-[#f3efe4] active:scale-95"
             >
-              <Share2 className="size-4" /> Share My Impact
+              <Share2 className="size-4" /> Share Impact
             </button>
             <button
               onClick={() => setShowLogModal(true)}
-              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#005a3c] px-6 py-3.5 font-semibold text-white shadow-lg shadow-[#005a3c]/20 transition hover:-translate-y-0.5 hover:bg-[#00452f] active:scale-95"
+              className="inline-flex items-center justify-center gap-2 rounded-full bg-[#005a3c] px-5 py-3 text-xs font-semibold text-white shadow-lg shadow-[#005a3c]/20 transition hover:-translate-y-0.5 hover:bg-[#00452f] active:scale-95"
             >
-              <Plus className="size-5" /> Log an activity
+              <Plus className="size-4" /> 10s AI Log
             </button>
           </div>
         </header>
 
-        {/* 4 Top Metric Cards */}
+        {/* 4 Top Metric Cards (Including Pocket Money Saved) */}
         <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          {/* Card 1: Daily Footprint */}
           <StatCard
-            label="Your daily footprint"
+            label="Daily Footprint"
             value={`${total} kg`}
             detail="CO₂ equivalent today"
             badge={`↓ ${vsGlobal}% vs global`}
             positive
           />
 
-          {/* Interactive Monthly Budget Card with Forecast */}
+          {/* Card 2: Pocket Money Saved (Paisa Bachao) */}
+          <div className="relative rounded-2xl border border-[#cfe9d5] bg-gradient-to-br from-[#f2f9f3] to-[#e6f4e9] p-6 shadow-sm">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-semibold text-[#005a3c] flex items-center gap-1.5">
+                <Coins className="size-4 text-[#4d7c0f]" /> Pocket Money Saved
+              </p>
+              <span className="rounded-full bg-[#005a3c]/10 px-2 py-0.5 text-[10px] font-bold text-[#005a3c]">
+                Paisa Bachao
+              </span>
+            </div>
+            <div className="mt-4 flex items-baseline gap-1">
+              <span className="text-3xl font-extrabold tracking-tight text-[#062b20]">₹{moneySaved}</span>
+              <span className="text-xs text-[#526d5f]">saved</span>
+            </div>
+            <div className="mt-3 h-2 w-full rounded-full bg-[#daeedf] overflow-hidden">
+              <div
+                className="h-full rounded-full bg-[#005a3c] transition-all duration-700"
+                style={{ width: `${savingsPct}%` }}
+              />
+            </div>
+            <p className="mt-2 text-xs text-[#526d5f] flex items-center justify-between">
+              <span>Goal: ₹{monthlySavingsGoal}/mo</span>
+              <strong className="text-[#005a3c] font-semibold">{savingsPct}% reached</strong>
+            </p>
+          </div>
+
+          {/* Card 3: Interactive Monthly Budget Card with Forecast */}
           <div className="relative rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm">
             <div className="flex items-center justify-between">
               <p className="text-sm text-[#718079]">Monthly Carbon Budget</p>
@@ -171,7 +213,7 @@ export default function Dashboard() {
                 <Edit2 className="size-3" /> Edit
               </button>
             </div>
-            <div className="mt-5 flex items-baseline justify-between gap-2">
+            <div className="mt-4 flex items-baseline justify-between gap-2">
               <p className="text-3xl font-bold tracking-tight text-[#062b20]">
                 {monthlyBudget} <span className="text-sm font-normal text-[#89958f]">kg</span>
               </p>
@@ -192,32 +234,52 @@ export default function Dashboard() {
               />
             </div>
             <p className="mt-2 text-xs text-[#89958f]">
-              Pacing ~<strong className="text-[#062b20]">{projectedMonthlyTotal} kg</strong> this month ({budgetPctUsed}%)
+              Pacing ~<strong className="text-[#062b20]">{projectedMonthlyTotal} kg</strong> this month
             </p>
           </div>
 
-          <StatCard
-            label="Top emission source"
-            value={CATEGORY_META[biggest[0]]?.label || 'Home energy'}
-            detail={`${biggest[1]} kg CO₂ today`}
-            badge="Focus Area"
-          />
-
-          {/* Impact Score */}
+          {/* Card 4: Climate Score */}
           <div className="relative overflow-hidden rounded-2xl bg-[#005a3c] p-6 text-white shadow-lg shadow-[#005a3c]/15">
             <Leaf className="absolute -right-2 -top-2 size-24 rotate-12 text-white/10" />
             <p className="text-sm text-emerald-100">Climate Score</p>
-            <div className="mt-6 flex items-end gap-2">
-              <span className="text-5xl font-bold tracking-tight">{score}</span>
-              <span className="mb-2 text-sm text-emerald-200">/ 100</span>
+            <div className="mt-5 flex items-end gap-2">
+              <span className="text-4xl font-bold tracking-tight">{score}</span>
+              <span className="mb-1 text-sm text-emerald-200">/ 100</span>
             </div>
-            <div className="mt-5 h-2 rounded-full bg-white/20">
+            <div className="mt-4 h-2 rounded-full bg-white/20">
               <div className="h-full rounded-full bg-[#c9f34a]" style={{ width: `${score}%` }} />
             </div>
-            <p className="mt-3 text-sm text-emerald-100">
-              {score >= 70 ? 'Leading the community top 15% 🌟' : 'Completing 1 challenge boosts score +8'}
+            <p className="mt-2.5 text-xs text-emerald-100">
+              {score >= 70 ? 'Top 15% eco-conscious benchmark' : 'Completing 1 challenge boosts score'}
             </p>
           </div>
+        </section>
+
+        {/* Smart Commute Comparator Callout Banner */}
+        <section className="rounded-3xl border border-[#d8ecd8] bg-gradient-to-r from-[#f0f9f3] via-[#f7fcf8] to-[#eaf5ed] p-6 shadow-xs flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start gap-4">
+            <span className="grid size-12 shrink-0 place-items-center rounded-2xl bg-[#005a3c] text-white shadow-sm">
+              <Navigation className="size-6" />
+            </span>
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base font-semibold text-[#062b20]">Smart Commute & Fare Comparator</h3>
+                <span className="rounded-full bg-[#005a3c] px-2.5 py-0.5 text-[10px] font-bold text-white">
+                  Decision Helper
+                </span>
+              </div>
+              <p className="mt-1 text-xs text-[#526d5f] leading-relaxed max-w-xl">
+                Planning your trip today? Compare Cab vs Metro vs Bus vs Two-Wheeler fares, travel time, and emissions side-by-side to save ₹300+ per commute.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setShowCommuteModal(true)}
+            className="inline-flex items-center gap-2 rounded-2xl bg-[#005a3c] px-5 py-3 text-xs font-semibold text-white hover:bg-[#00452f] transition active:scale-95 shadow-sm whitespace-nowrap self-stretch md:self-auto justify-center"
+          >
+            <span>Compare Commute Options</span>
+            <ArrowRight className="size-4" />
+          </button>
         </section>
 
         {/* Charts & Breakdown */}
@@ -283,7 +345,7 @@ export default function Dashboard() {
               </span>
               <p>
                 <strong className="text-[#18362b]">Top win:</strong> Replacing 15 km of driving with metro commutes
-                saves ~1.8 kg CO₂ daily.
+                saves ~1.8 kg CO₂ and ~₹240 daily.
               </p>
             </div>
           </div>
@@ -293,7 +355,7 @@ export default function Dashboard() {
         <section>
           <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div>
-              <p className="text-sm text-[#718079]">Live Carbon Activity Feed</p>
+              <p className="text-sm text-[#718079]">Live Carbon & Money Savings Feed</p>
               <h2 className="mt-1 text-2xl font-semibold tracking-tight text-[#062b20]">Your latest logs</h2>
             </div>
             <div className="flex flex-wrap items-center gap-1.5">
@@ -325,7 +387,7 @@ export default function Dashboard() {
                 </button>
               </div>
             ) : (
-              filteredLogs.slice(0, 8).map((log) => {
+              filteredLogs.slice(0, 10).map((log) => {
                 const meta = CATEGORY_META[log.category] || CATEGORY_META.transport
                 const Icon = meta.icon || Leaf
                 const isReduction = (log.impact || 0) < 0
@@ -342,11 +404,16 @@ export default function Dashboard() {
                     </span>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-2 flex-wrap">
                         <p className="font-semibold text-sm text-[#132e25] truncate">{log.title}</p>
                         {log.receiptScan && (
                           <span className="inline-flex items-center gap-1 rounded-full bg-[#d5f3df] px-2 py-0.5 text-[10px] font-semibold text-[#005a3c]">
                             <Camera className="size-3" /> Scanned
+                          </span>
+                        )}
+                        {log.moneySaved > 0 && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-[#eafbba] px-2 py-0.5 text-[10px] font-bold text-[#4d7c0f]">
+                            💰 Saved ₹{log.moneySaved}
                           </span>
                         )}
                       </div>
@@ -424,6 +491,7 @@ export default function Dashboard() {
       {/* Modals */}
       <LogActivityModal isOpen={showLogModal} onClose={() => setShowLogModal(false)} />
       <ShareImpactModal isOpen={showShareModal} onClose={() => setShowShareModal(false)} />
+      <CommuteComparatorModal isOpen={showCommuteModal} onClose={() => setShowCommuteModal(false)} />
     </div>
   )
 }
@@ -432,7 +500,7 @@ function StatCard({ label, value, detail, badge, positive }) {
   return (
     <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm">
       <p className="text-sm text-[#718079]">{label}</p>
-      <div className="mt-5 flex items-center justify-between gap-2">
+      <div className="mt-4 flex items-center justify-between gap-2">
         <p className="truncate text-3xl font-bold tracking-tight text-[#062b20]">{value}</p>
         <span
           className={`rounded-full px-3 py-1 text-xs font-semibold ${

@@ -195,3 +195,4 @@ Receipt text: ${promptText}`
     scannedAt: new Date().toISOString(),
   }
 }
+

@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import useStore from '../store/useStore'
 import ActionCard from '../components/ActionCard'
 import { getTotalKg } from '../utils/calculations'
+import { Coins } from 'lucide-react'
 
 export default function ActionCenter() {
   const { actions, completedActions, user, footprint, completeAction } = useStore()
@@ -14,6 +15,7 @@ export default function ActionCenter() {
 
   const xpToday = todayCompleted.reduce((sum, a) => sum + (a.xp || 0), 0)
   const savedKg = todayCompleted.reduce((sum, a) => sum + (a.impact || 0), 0)
+  const moneyToday = todayCompleted.reduce((sum, a) => sum + (a.moneySaved || 100), 0)
 
   const easy = actions.filter(a => a.difficulty === 'easy')
   const medium = actions.filter(a => a.difficulty === 'medium')
@@ -24,17 +26,17 @@ export default function ActionCenter() {
       {/* Header matching Carbonly theme */}
       <header className="flex flex-col gap-3 pt-4 md:pt-8 mb-6">
         <p className="flex items-center gap-2 text-sm font-medium text-[#005a3c]">
-          <span className="size-2 rounded-full bg-[#005a3c]" /> Daily impact challenges
+          <span className="size-2 rounded-full bg-[#005a3c]" /> Daily impact & pocket savings challenges
         </p>
         <h1 className="max-w-3xl text-3xl font-semibold tracking-[-0.04em] text-[#062b20] md:text-5xl">
-          Take action, earn <em className="font-serif text-[#005a3c]">progress.</em>
+          Take action, earn <em className="font-serif text-[#005a3c]">cash & progress.</em>
         </h1>
         <p className="max-w-xl text-sm leading-relaxed text-[#6f7f78] md:text-base">
-          Complete targeted lifestyle challenges to shrink your daily carbon emissions, level up your profile, and watch your ecosystem bloom.
+          Complete high-impact lifestyle challenges to reduce your footprint, save cash on your daily bills, and level up your climate score.
         </p>
 
-        {/* 3 Metric Cards */}
-        <div className="grid grid-cols-3 gap-3 mt-4 max-w-2xl">
+        {/* 4 Metric Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4 max-w-3xl">
           <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-4 text-center shadow-xs">
             <div className="text-2xl font-bold text-[#062b20]">
               {todayCompleted.length}
@@ -42,13 +44,17 @@ export default function ActionCenter() {
             </div>
             <div className="text-[#718079] text-xs mt-0.5">Completed today</div>
           </div>
-          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-4 text-center shadow-xs">
-            <div className="text-2xl font-bold text-[#b45309]">+{xpToday}</div>
-            <div className="text-[#718079] text-xs mt-0.5">XP gained</div>
+          <div className="rounded-2xl border border-[#cfe9d5] bg-[#f2f9f3] p-4 text-center shadow-xs">
+            <div className="text-2xl font-bold text-[#005a3c]">₹{moneyToday}</div>
+            <div className="text-[#005a3c] text-xs mt-0.5 font-medium">Pocket cash saved</div>
           </div>
           <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-4 text-center shadow-xs">
             <div className="text-2xl font-bold text-[#005a3c]">{savedKg.toFixed(1)}</div>
             <div className="text-[#718079] text-xs mt-0.5">kg CO₂ saved</div>
+          </div>
+          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-4 text-center shadow-xs">
+            <div className="text-2xl font-bold text-[#b45309]">+{xpToday}</div>
+            <div className="text-[#718079] text-xs mt-0.5">XP gained</div>
           </div>
         </div>
       </header>
@@ -56,7 +62,7 @@ export default function ActionCenter() {
       {/* Progress Card */}
       <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-5 shadow-sm mb-6">
         <div className="flex items-center justify-between mb-2.5">
-          <h2 className="text-sm font-semibold text-[#062b20]">Today&apos;s Goal Progress</h2>
+          <h2 className="text-sm font-semibold text-[#062b20]">Today&apos;s Challenge Completion</h2>
           <span className="text-xs font-semibold text-[#005a3c]">
             {Math.round((todayCompleted.length / actions.length) * 100)}% Complete
           </span>
@@ -69,7 +75,7 @@ export default function ActionCenter() {
         </div>
         {todayCompleted.length === actions.length && (
           <p className="text-xs text-[#005a3c] font-medium mt-2 text-center">
-            🎉 All daily actions complete! Your ecosystem is thriving today!
+            🎉 All daily actions complete! Your ecosystem and wallet are both thriving today!
           </p>
         )}
       </div>
@@ -79,7 +85,7 @@ export default function ActionCenter() {
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
             <span className="text-xs font-semibold text-[#062b20] uppercase tracking-wider">Quick Wins</span>
-            <span className="text-[11px] text-[#718079]">· Low effort, immediate impact</span>
+            <span className="text-[11px] text-[#718079]">· Low effort, immediate pocket savings</span>
           </div>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {easy.map(action => (
@@ -93,8 +99,8 @@ export default function ActionCenter() {
       {medium.length > 0 && (
         <div className="mb-6">
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-semibold text-[#062b20] uppercase tracking-wider">Medium Impact</span>
-            <span className="text-[11px] text-[#718079]">· Lifestyle shifts & habits</span>
+            <span className="text-xs font-semibold text-[#062b20] uppercase tracking-wider">High-Yield Lifestyle Habits</span>
+            <span className="text-[11px] text-[#718079]">· Bigger carbon & cash cuts</span>
           </div>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {medium.map(action => (
@@ -106,10 +112,10 @@ export default function ActionCenter() {
 
       {/* Hard actions */}
       {hard.length > 0 && (
-        <div className="mb-6">
+        <div>
           <div className="flex items-center gap-2 mb-3">
-            <span className="text-xs font-semibold text-[#062b20] uppercase tracking-wider">High Impact</span>
-            <span className="text-[11px] text-[#718079]">· Transformative long-term choices</span>
+            <span className="text-xs font-semibold text-[#062b20] uppercase tracking-wider">Hero Shifts</span>
+            <span className="text-[11px] text-[#718079]">· Transformational changes</span>
           </div>
           <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
             {hard.map(action => (
@@ -118,14 +124,6 @@ export default function ActionCenter() {
           </div>
         </div>
       )}
-
-      {/* Tip footer */}
-      <div className="rounded-2xl border border-[#d5f3df] bg-[#f0f9f3] p-4 text-xs text-[#1e503b] leading-relaxed flex items-center gap-3">
-        <span className="text-xl">💡</span>
-        <span>
-          <strong>Pro-Tip:</strong> Complete at least one challenge every day to preserve your streak bonus and maintain 100% ecosystem health in the Insights view.
-        </span>
-      </div>
     </div>
   )
 }
