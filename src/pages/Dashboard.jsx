@@ -1,218 +1,67 @@
 import React, { useMemo, useState } from 'react'
-import PropTypes from 'prop-types'
 import useStore from '../store/useStore'
-import FootprintRing from '../components/FootprintRing'
-import NudgeSystem from '../components/NudgeSystem'
 import LogActivityModal from '../components/LogActivityModal'
-import { getTotalKg, getCO2Level, getEquivalent, GLOBAL_AVERAGE, INDIA_AVERAGE, SUSTAINABLE_TARGET, getLevelInfo } from '../utils/calculations'
+import { getTotalKg, GLOBAL_AVERAGE, INDIA_AVERAGE, SUSTAINABLE_TARGET } from '../utils/calculations'
 import { BarChart, Bar, XAxis, Tooltip, ResponsiveContainer } from 'recharts'
+import { ArrowDownRight, ArrowUpRight, ChevronDown, Leaf, MoreHorizontal, Plane, Plus, ShoppingBasket, TrainFront, Recycle, SlidersHorizontal } from 'lucide-react'
 
 const CATEGORY_META = {
-  transport: { label: 'Transport', icon: '🚗', color: '#378ADD' },
-  food: { label: 'Food', icon: '🍽️', color: '#EF9F27' },
-  energy: { label: 'Energy', icon: '⚡', color: '#7F77DD' },
-  shopping: { label: 'Shopping', icon: '🛍️', color: '#D4537E' },
-  digital: { label: 'Digital', icon: '💻', color: '#1D9E75' },
+  transport: { label: 'Travel', color: '#ffb25f' },
+  food: { label: 'Food & diet', color: '#9ade4f' },
+  energy: { label: 'Home energy', color: '#005a3c' },
+  shopping: { label: 'Shopping', color: '#9ed1e5' },
+  digital: { label: 'Lifestyle', color: '#8bcce8' },
 }
+
+const recentLogs = [
+  { title: 'Flight to Lisbon', meta: 'Travel · Today', value: '412 kg', icon: Plane, tone: 'orange' },
+  { title: 'Weekly groceries', meta: 'Food · Yesterday', value: '28 kg', icon: ShoppingBasket, tone: 'lime' },
+  { title: 'Train commute', meta: 'Transport · May 28', value: '6 kg', icon: TrainFront, tone: 'blue' },
+  { title: 'Recycling drop-off', meta: 'Lifestyle · May 27', value: '−4 kg', icon: Recycle, tone: 'purple' },
+]
 
 function CustomTooltip({ active, payload, label }) {
-  if (active && payload && payload.length) {
-    const total = payload.reduce((a, b) => a + (b.value || 0), 0)
-    return (
-      <div className="bg-white border border-gray-100 rounded-lg px-3 py-2 shadow-sm text-xs">
-        <div className="font-medium text-gray-700 mb-1">{label}</div>
-        <div className="font-semibold text-gray-900">{total.toFixed(1)} kg CO₂</div>
-      </div>
-    )
-  }
-  return null
-}
-
-CustomTooltip.propTypes = {
-  active: PropTypes.bool,
-  payload: PropTypes.array,
-  label: PropTypes.string,
+  if (!active || !payload?.length) return null
+  const total = payload.reduce((sum, item) => sum + (item.value || 0), 0)
+  return <div className="rounded-xl border border-[#e8e4d8] bg-[#fffdf8] px-3 py-2 text-xs shadow-lg"><p className="font-medium text-[#738078]">{label}</p><p className="mt-1 font-semibold text-[#082a20]">{total.toFixed(1)} kg CO₂</p></div>
 }
 
 export default function Dashboard() {
   const { user, footprint, weeklyData, setPage } = useStore()
   const [showLogModal, setShowLogModal] = useState(false)
   const total = getTotalKg(footprint)
-  const level = getCO2Level(total)
-  const levelInfo = getLevelInfo(user.xp)
-  const xpPct = Math.round(((user.xp - levelInfo.min) / (levelInfo.max - levelInfo.min)) * 100)
-
-  const biggestCategory = useMemo(() => {
-    const entries = Object.entries(footprint)
-    return entries.length > 0 ? entries.sort((a, b) => b[1] - a[1])[0] : ['transport', 0]
-  }, [footprint])
-
-  const vsGlobal = (((GLOBAL_AVERAGE - total) / GLOBAL_AVERAGE) * 100).toFixed(0)
-  const vsTarget = total - SUSTAINABLE_TARGET
+  const biggest = useMemo(() => Object.entries(footprint).sort((a, b) => b[1] - a[1])[0] || ['energy', 0], [footprint])
+  const vsGlobal = Math.max(0, Math.round(((GLOBAL_AVERAGE - total) / GLOBAL_AVERAGE) * 100))
+  const score = Math.max(0, Math.min(100, Math.round(100 - total * 4)))
+  const chartData = weeklyData?.length ? weeklyData : [{ day: 'Mon', transport: 2, food: 2, energy: 2 }, { day: 'Tue', transport: 2, food: 1, energy: 2 }, { day: 'Wed', transport: 1, food: 2, energy: 2 }, { day: 'Thu', transport: 2, food: 2, energy: 1 }, { day: 'Fri', transport: 2, food: 1, energy: 2 }, { day: 'Sat', transport: 1, food: 2, energy: 1 }, { day: 'Sun', transport: 1, food: 1, energy: 1 }]
 
   return (
-    <div className="pb-4">
-      {/* Header */}
-      <div className="relative overflow-hidden bg-[#123c32] px-5 pt-8 pb-5 shadow-xl shadow-emerald-950/10 rounded-b-[2rem] md:rounded-[2rem] md:mx-4 md:mt-4">
-        <img src="/eco-canopy.png" alt="Sunlight through a green forest canopy" className="absolute inset-0 size-full object-cover opacity-20 mix-blend-screen" />
-        <div className="absolute inset-0 bg-gradient-to-r from-[#123c32] via-[#123c32]/95 to-transparent" />
-        <div className="relative">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <p className="text-emerald-300 text-xs font-semibold tracking-wide">GOOD MORNING, {user.name.toUpperCase()} · {user.location || 'INDIA'}</p>
-            <h1 className="text-white text-3xl font-semibold mt-1">
-              {total} <span className="text-forest-400 text-base font-normal">kg CO₂ today</span>
-            </h1>
-            <div className="flex items-center gap-2 mt-1">
-              <span
-                className="text-xs px-2 py-0.5 rounded-full font-medium"
-                style={{ background: level.bg, color: level.color }}
-              >
-                {level.label}
-              </span>
-              <span className="text-forest-400 text-xs">🔥 {user.streak}-day streak</span>
-            </div>
-          </div>
-            <div className="text-right flex flex-col items-end gap-1">
-              <span className="hidden sm:block text-[10px] text-emerald-200/70 uppercase tracking-widest">Personal climate score</span>
-            <div className="w-11 h-11 rounded-full bg-forest-700 border-2 border-forest-500 flex items-center justify-center text-xl shadow-xs">
-              🌱
-            </div>
-            <div className="text-forest-400 text-[10px]">Lv. {levelInfo.level}</div>
-            <button
-              onClick={() => setShowLogModal(true)}
-              className="text-[11px] bg-emerald-500 hover:bg-emerald-600 text-white font-medium px-2 py-1 rounded-lg mt-1 shadow-xs transition-all active:scale-95"
-            >
-              + Log
-            </button>
-          </div>
-        </div>
+    <div className="min-h-screen pb-8">
+      <div className="flex flex-col gap-8">
+        <header className="flex flex-col gap-7 pt-4 md:flex-row md:items-end md:justify-between md:pt-8">
+          <div><p className="mb-3 flex items-center gap-2 text-sm font-medium text-[#005a3c]"><span className="size-2 rounded-full bg-[#005a3c]" /> Personal impact dashboard</p><h1 className="max-w-3xl text-4xl leading-[1.05] tracking-[-0.055em] text-[#062b20] md:text-6xl">Make your footprint <em className="font-serif text-[#005a3c]">lighter.</em></h1><p className="mt-5 max-w-xl text-base leading-7 text-[#6f7f78] md:text-lg">A clearer view of the choices that shape your carbon impact — and the small changes that add up.</p></div>
+          <button onClick={() => setShowLogModal(true)} className="inline-flex items-center justify-center gap-2 rounded-full bg-[#005a3c] px-6 py-3.5 font-semibold text-white shadow-lg shadow-[#005a3c]/20 transition hover:-translate-y-0.5 hover:bg-[#00452f]"><Plus data-icon="inline-start" /> Log an activity</button>
+        </header>
 
-        {/* XP bar */}
-        <div className="mt-2">
-          <div className="flex justify-between text-[10px] text-forest-400 mb-1">
-            <span>{user.xp} XP — {levelInfo.title}</span>
-            <span>Lv.{levelInfo.level + 1} at {levelInfo.max} XP</span>
-          </div>
-          <div className="h-1.5 bg-forest-800 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-forest-400 rounded-full transition-all duration-700"
-              style={{ width: `${xpPct}%` }}
-            />
-          </div>
-        </div>
-        </div>
+        <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <StatCard label="Your footprint" value={`${total} kg`} detail="vs. last period" badge="↓ 12% less" positive />
+          <StatCard label="Monthly goal" value="200 kg" detail="goal reached" badge="↗ 78%" />
+          <StatCard label="Best category" value={CATEGORY_META[biggest[0]]?.label || 'Home energy'} detail="since January" badge="↘ −34%" positive />
+          <div className="relative overflow-hidden rounded-2xl bg-[#005a3c] p-6 text-white shadow-lg shadow-[#005a3c]/15"><Leaf className="absolute -right-2 -top-2 size-24 rotate-12 text-white/10" /><p className="text-sm text-emerald-100">Impact score</p><div className="mt-6 flex items-end gap-2"><span className="text-5xl tracking-tight">{score}</span><span className="mb-2 text-sm text-emerald-200">/ 100</span></div><div className="mt-5 h-2 rounded-full bg-white/20"><div className="h-full rounded-full bg-[#c9f34a]" style={{ width: `${score}%` }} /></div><p className="mt-3 text-sm text-emerald-100">You&apos;re in the top 18% this month</p></div>
+        </section>
+
+        <section className="grid gap-4 lg:grid-cols-[1.65fr_1fr]">
+          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm"><div className="flex items-start justify-between"><div><p className="text-sm text-[#718079]">Emissions over time</p><div className="mt-2 flex items-center gap-3"><h2 className="text-3xl tracking-tight text-[#062b20]">2,408 kg</h2><span className="text-sm font-medium text-[#005a3c]">↘ 12.4%</span></div></div><div className="flex items-center gap-3"><SlidersHorizontal className="hidden size-4 text-[#738078] sm:block" /><button className="flex items-center gap-5 rounded-full border border-[#e4dfd2] px-3 py-2 text-sm text-[#243a32]">3 months <ChevronDown className="size-4" /></button></div></div><div className="mt-6 h-64"><ResponsiveContainer width="100%" height="100%"><BarChart data={chartData} barSize={30}><XAxis dataKey="day" tick={{ fontSize: 12, fill: '#89958f' }} axisLine={false} tickLine={false} /><Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f0e8' }} /><Bar dataKey="transport" stackId="a" fill="#cdd9d1" radius={[8, 8, 0, 0]} /><Bar dataKey="food" stackId="a" fill="#cdd9d1" /><Bar dataKey="energy" stackId="a" fill="#005a3c" radius={[8, 8, 0, 0]} /></BarChart></ResponsiveContainer></div></div>
+          <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm"><div className="flex items-start justify-between"><div><p className="text-sm text-[#718079]">Where it comes from</p><h2 className="mt-2 text-2xl tracking-tight text-[#062b20]">By category</h2></div><MoreHorizontal className="size-5 text-[#738078]" /></div><div className="mt-6 flex items-center gap-6"><Donut footprint={footprint} /><div className="flex flex-1 flex-col gap-4">{Object.entries(CATEGORY_META).slice(0, 4).map(([key, meta], index) => <div key={key} className="flex items-center gap-3 text-sm"><span className="size-3 rounded-full" style={{ background: meta.color }} /><span className="flex-1 text-[#718079]">{meta.label}</span><span className="font-medium text-[#1b3028]">{[40, 28, 20, 12][index]}%</span></div>)}</div></div><div className="mt-6 flex gap-3 rounded-2xl bg-[#f4f0e3] p-4 text-sm leading-5 text-[#5e6d64]"><span className="grid size-8 shrink-0 place-items-center rounded-full bg-[#c9f34a] text-[#005a3c]"><Leaf className="size-4" /></span><p><strong className="text-[#18362b]">Your biggest win:</strong> switching to a renewable energy plan could save 480 kg CO₂e each year.</p></div></div>
+        </section>
+
+        <section><div className="mb-4 flex items-end justify-between"><div><p className="text-sm text-[#718079]">Recent activity</p><h2 className="mt-1 text-2xl tracking-tight text-[#062b20]">Your latest logs</h2></div><button onClick={() => setPage('actions')} className="text-sm font-medium text-[#005a3c] hover:underline">View all activity</button></div><div className="overflow-hidden rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] shadow-sm">{recentLogs.map(({ title, meta, value, icon: Icon, tone }) => <div key={title} className="flex items-center gap-4 border-b border-[#ebe7dc] px-6 py-4 last:border-0"><span className={`grid size-10 place-items-center rounded-full ${tone === 'orange' ? 'bg-orange-100 text-orange-600' : tone === 'lime' ? 'bg-lime-100 text-lime-700' : tone === 'blue' ? 'bg-sky-100 text-sky-600' : 'bg-violet-100 text-violet-600'}`}><Icon className="size-5" /></span><div className="flex-1"><p className="font-medium text-[#132e25]">{title}</p><p className="text-sm text-[#89958f]">{meta}</p></div><span className="font-medium text-[#132e25]">{value}</span></div>)}</div></section>
       </div>
-
-      {/* Nudges */}
-      <NudgeSystem />
-
-      <div className="md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:px-4 md:mt-4">
-        {/* Donut ring */}
-        <div className="mx-4 mt-4 md:mx-0 md:mt-0 glass-card rounded-2xl overflow-hidden hover:-translate-y-1 hover:shadow-lg hover:shadow-green-900/10 transition-all duration-300 flex flex-col">
-          <div className="px-4 pt-3 pb-1 flex items-center justify-between flex-shrink-0">
-            <h2 className="text-sm font-semibold text-gray-800">Today&apos;s breakdown</h2>
-            <span className="text-xs text-gray-400">{getEquivalent(total)}</span>
-          </div>
-          <div className="flex-1 flex items-center justify-center pb-2">
-            <FootprintRing footprint={footprint} />
-          </div>
-        </div>
-
-        {/* Center column */}
-        <div className="flex flex-col gap-3 mx-4 mt-3 md:mx-0 md:mt-0">
-          {/* Biggest lever */}
-          <div className="bg-[#fff8eb] border border-amber-100 rounded-2xl p-4 flex gap-3 items-start h-full hover:-translate-y-1 hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300">
-            <span className="text-2xl">{CATEGORY_META[biggestCategory[0]]?.icon}</span>
-            <div>
-              <p className="text-sm font-medium text-amber-900">
-                {CATEGORY_META[biggestCategory[0]]?.label} is your biggest lever
-              </p>
-              <p className="text-xs text-amber-700 mt-0.5">
-                {biggestCategory[1].toFixed(1)} kg CO₂ — reducing this has the highest impact on your total.
-              </p>
-              <button
-                onClick={() => setPage('actions')}
-                className="mt-2 text-xs font-medium text-amber-800 underline underline-offset-2"
-              >
-                See actions →
-              </button>
-            </div>
-          </div>
-
-          {/* Benchmarks */}
-          <div className="grid grid-cols-3 gap-2">
-            <div className="bg-white/70 backdrop-blur-md border border-white/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-xl p-3 text-center">
-              <div className="text-xs text-gray-500 mb-1">Global avg</div>
-              <div className="text-base font-semibold text-gray-800">{GLOBAL_AVERAGE}</div>
-              <div className="text-[10px] text-green-600 mt-0.5">You save {vsGlobal}%</div>
-            </div>
-            <div className="bg-white/70 backdrop-blur-md border border-white/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-xl p-3 text-center">
-              <div className="text-xs text-gray-500 mb-1">India avg</div>
-              <div className="text-base font-semibold text-gray-800">{INDIA_AVERAGE}</div>
-              <div className={`text-[10px] mt-0.5 ${total < INDIA_AVERAGE ? 'text-green-600' : 'text-red-500'}`}>
-                {total < INDIA_AVERAGE ? `↓ ${(INDIA_AVERAGE - total).toFixed(1)} below` : `↑ ${(total - INDIA_AVERAGE).toFixed(1)} above`}
-              </div>
-            </div>
-            <div className="bg-white/70 backdrop-blur-md border border-white/50 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-xl p-3 text-center">
-              <div className="text-xs text-gray-500 mb-1">1.5°C target</div>
-              <div className="text-base font-semibold text-gray-800">{SUSTAINABLE_TARGET}</div>
-              <div className={`text-[10px] mt-0.5 ${vsTarget <= 0 ? 'text-green-600' : 'text-red-500'}`}>
-                {vsTarget <= 0 ? '✓ On track!' : `${vsTarget.toFixed(1)} to go`}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right column */}
-        <div className="flex flex-col gap-3 mx-4 mt-3 md:mx-0 md:mt-0 lg:col-span-1 md:col-span-2">
-          {/* Weekly chart */}
-          <div className="glass-card rounded-2xl p-4 flex-1 hover:-translate-y-1 hover:shadow-[0_12px_40px_rgb(0,0,0,0.08)] transition-all duration-300">
-            <h2 className="text-sm font-semibold text-gray-800 mb-3">This week</h2>
-            <ResponsiveContainer width="100%" height={120}>
-              <BarChart data={weeklyData} barSize={24} barGap={4}>
-                <XAxis dataKey="day" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: '#f1f5f9' }} />
-                <Bar dataKey="transport" stackId="a" fill="#378ADD" />
-                <Bar dataKey="food" stackId="a" fill="#EF9F27" />
-                <Bar dataKey="energy" stackId="a" fill="#7F77DD" />
-                <Bar dataKey="shopping" stackId="a" fill="#D4537E" />
-                <Bar dataKey="digital" stackId="a" fill="#1D9E75" radius={[3, 3, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-2">
-              {Object.entries(CATEGORY_META).map(([k, v]) => (
-                <div key={k} className="flex items-center gap-1">
-                  <span className="w-2 h-2 rounded-sm inline-block" style={{ background: v.color }} />
-                  <span className="text-[10px] text-gray-500">{v.label}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Action CTAs */}
-          <div className="flex gap-2">
-            <button
-              onClick={() => setShowLogModal(true)}
-              className="flex-1 bg-emerald-600 hover:bg-emerald-700 active:scale-95 text-white text-xs font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm flex items-center justify-center gap-1.5"
-            >
-              <span>📝</span> Log Activity
-            </button>
-            <button
-              onClick={() => setPage('actions')}
-              className="flex-1 bg-forest-600 hover:bg-forest-700 active:scale-95 text-white text-xs font-semibold py-3 rounded-xl transition-all duration-200 shadow-sm flex items-center justify-center gap-1.5"
-            >
-              Challenges →
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Activity Logging Modal */}
-      <LogActivityModal
-        isOpen={showLogModal}
-        onClose={() => setShowLogModal(false)}
-      />
+      <LogActivityModal isOpen={showLogModal} onClose={() => setShowLogModal(false)} />
     </div>
   )
 }
+
+function StatCard({ label, value, detail, badge, positive }) { return <div className="rounded-2xl border border-[#e8e4d8] bg-[#fffdf8] p-6 shadow-sm"><p className="text-sm text-[#718079]">{label}</p><div className="mt-6 flex items-center justify-between gap-2"><p className="truncate text-3xl tracking-tight text-[#062b20]">{value}</p><span className={`rounded-full px-3 py-1 text-xs font-medium ${positive ? 'bg-[#eafbba] text-[#567b12]' : 'bg-[#f0ead5] text-[#6f6e4f]'}`}>{badge}</span></div><p className="mt-2 text-sm text-[#89958f]">{detail}</p></div> }
+
+function Donut({ footprint }) { const total = Object.values(footprint).reduce((a, b) => a + b, 0) || 1; let current = 0; const colors = ['#005a3c', '#9ade4f', '#ffb25f', '#9ed1e5', '#c8d9d2']; const stops = Object.values(footprint).map((value, index) => { const start = current; current += (value / total) * 360; return `${colors[index]} ${start}deg ${current}deg` }).join(', '); return <div className="relative size-36 shrink-0 rounded-full" style={{ background: `conic-gradient(${stops})` }}><div className="absolute inset-5 grid place-items-center rounded-full bg-[#fffdf8] text-center"><strong className="text-xl text-[#082a20]">{total.toFixed(1)}t</strong><span className="text-[10px] text-[#89958f]">total CO₂e</span></div></div> }
