@@ -244,6 +244,16 @@ const useStore = create(
           footprint: { ...state.footprint, [category]: value }
         }))
       },
+
+      updateUserProfile: (updates) => {
+        set(state => ({
+          user: { ...state.user, ...updates }
+        }))
+      },
+
+      restartOnboarding: () => {
+        set({ onboardingComplete: false })
+      },
     }),
     {
       name: 'ecoself-storage',
