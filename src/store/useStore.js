@@ -416,7 +416,11 @@ const useStore = create(
       completeOnboarding: (data) => {
         set({
           onboardingComplete: true,
-          user: { ...get().user, ...data },
+          user: {
+            ...get().user,
+            ...data,
+            city: data.location || data.city || get().user?.city || 'Bengaluru',
+          },
           footprint: data.footprint || get().footprint,
         })
       },

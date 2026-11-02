@@ -17,11 +17,13 @@ export async function parseDayWithGemini(text = '') {
   if (!cleanText) return null
 
   const apiKey = import.meta.env?.VITE_GEMINI_API_KEY
+  const rawModel = import.meta.env?.VITE_GEMINI_MODEL || 'gemini-2.5-flash'
+  const model = rawModel.includes('3.8') ? 'gemini-2.5-flash' : rawModel
 
   if (apiKey) {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -198,3 +200,4 @@ Extract each activity and return ONLY a valid JSON object without markdown fence
     model: 'Gemini Flash 3.8 (Offline)',
   }
 }
+

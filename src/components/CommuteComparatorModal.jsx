@@ -267,3 +267,4 @@ CommuteComparatorModal.propTypes = {
   isOpen: PropTypes.bool.isRequired,
   onClose: PropTypes.func.isRequired,
 }
+

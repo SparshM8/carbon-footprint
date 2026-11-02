@@ -81,12 +81,14 @@ export async function scanReceiptWithGemini({ receiptId, customText, fileName })
 
   // Check if Gemini API key exists
   const apiKey = import.meta.env?.VITE_GEMINI_API_KEY
+  const rawModel = import.meta.env?.VITE_GEMINI_MODEL || 'gemini-2.5-flash'
+  const model = rawModel.includes('3.8') ? 'gemini-2.5-flash' : rawModel
   const promptText = customText || (fileName ? `Receipt/bill file: ${fileName}` : 'General utility bill')
 
   if (apiKey) {
     try {
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

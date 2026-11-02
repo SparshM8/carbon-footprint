@@ -89,11 +89,21 @@ export default function Navigation() {
   }
 
   // Filter searchable items
+  const qLower = searchQuery.toLowerCase()
   const searchResults = searchQuery.trim()
     ? [
-        ...actions.filter(a => a.title.toLowerCase().includes(searchQuery.toLowerCase()) || a.category.toLowerCase().includes(searchQuery.toLowerCase()))
+        ...(qLower.includes('commute') || qLower.includes('metro') || qLower.includes('cab') || qLower.includes('fare')
+          ? [{ type: 'feature', title: '🗺️ Smart Commute & Fare Comparator', detail: 'Compare Cab vs Metro vs Two-Wheeler fares', action: () => { setPage('dashboard'); setIsSearchOpen(false) } }]
+          : []),
+        ...(qLower.includes('receipt') || qLower.includes('scanner') || qLower.includes('bill')
+          ? [{ type: 'feature', title: '📸 Gemini AI Receipt & Bill Scanner', detail: 'Scan power bills, fuel slips & grocery receipts', action: () => { setPage('dashboard'); setIsSearchOpen(false) } }]
+          : []),
+        ...(qLower.includes('paisa') || qLower.includes('money') || qLower.includes('saving')
+          ? [{ type: 'feature', title: '💰 Pocket Money Saved (Paisa Bachao)', detail: 'View your accumulated cash savings', action: () => { setPage('dashboard'); setIsSearchOpen(false) } }]
+          : []),
+        ...actions.filter(a => a.title.toLowerCase().includes(qLower) || a.category.toLowerCase().includes(qLower))
           .map(a => ({ type: 'challenge', title: a.title, detail: `${a.impact} kg CO₂ · ${a.category}`, action: () => { setPage('actions'); setIsSearchOpen(false) } })),
-        ...tabs.filter(t => t.label.toLowerCase().includes(searchQuery.toLowerCase()))
+        ...tabs.filter(t => t.label.toLowerCase().includes(qLower))
           .map(t => ({ type: 'page', title: `Go to ${t.label}`, detail: 'Navigation tab', action: () => { setPage(t.id); setIsSearchOpen(false) } })),
         { type: 'ai', title: `Ask Gemini: "${searchQuery}"`, detail: 'Eco Advisor query', action: () => { setPage('advisor'); setIsSearchOpen(false) } },
       ]
